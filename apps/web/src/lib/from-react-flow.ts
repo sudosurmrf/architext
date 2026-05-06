@@ -95,7 +95,9 @@ export function applyNodeRemovals(
       const services = result.services.map((s) =>
         s.groupId === group.id ? { ...s, groupId: undefined } : s
       );
-      const groups = result.groups.filter((g) => g.id !== id);
+      const groups = result.groups
+        .filter((g) => g.id !== id)
+        .map((g) => g.parentGroupId === group.id ? { ...g, parentGroupId: undefined } : g);
       result = { ...result, groups, services };
     } else if (isService) {
       const services = result.services.filter((s) => s.id !== id);

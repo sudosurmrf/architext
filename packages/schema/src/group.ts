@@ -33,6 +33,7 @@ export const GroupSchema = z.object({
       (ids) => new Set(ids).size === ids.length,
       { message: "serviceIds must be unique" }
     ),
+  parentGroupId: IdSchema.optional(),
   position: PositionSchema.optional(),
   size: SizeSchema.optional(),
   network: GroupNetworkSchema.optional(),

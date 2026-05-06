@@ -27,6 +27,7 @@ export interface AddGroupParams {
   position: Position;
   size: Size;
   network?: "public" | "private" | "internal";
+  parentGroupId?: string;
 }
 
 export function addGroup(spec: ArchitextSpec, params: AddGroupParams): ArchitextSpec {
@@ -38,6 +39,7 @@ export function addGroup(spec: ArchitextSpec, params: AddGroupParams): Architext
     position: params.position,
     size: params.size,
     ...(params.network ? { network: params.network } : {}),
+    ...(params.parentGroupId ? { parentGroupId: params.parentGroupId } : {}),
   };
   return { ...spec, groups: [...spec.groups, group] };
 }
@@ -103,7 +105,12 @@ export function removeNode(spec: ArchitextSpec, nodeId: string): ArchitextSpec {
     const services = spec.services.map((s) =>
       s.groupId === group.id ? { ...s, groupId: undefined } : s
     );
-    const groups = spec.groups.filter((g) => g.id !== nodeId);
+    // Unlink child groups and remove the group itself
+    const groups = spec.groups
+      .filter((g) => g.id !== nodeId)
+      .map((g) =>
+        g.parentGroupId === group.id ? { ...g, parentGroupId: undefined } : g
+      );
     return { ...spec, groups, services };
   }
 
@@ -193,6 +200,42 @@ export function reparentService(
   return { ...spec, groups, services };
 }
 
+export function reparentGroup(
+  spec: ArchitextSpec,
+  groupId: string,
+  newParentId: string | undefined,
+  newPosition: Position,
+): ArchitextSpec {
+  const gIdx = spec.groups.findIndex((g) => g.id === groupId);
+  if (gIdx === -1) return spec;
+
+  const group = spec.groups[gIdx]!;
+  if (group.parentGroupId === newParentId) {
+    const groups = [...spec.groups];
+    groups[gIdx] = { ...group, position: newPosition };
+    return { ...spec, groups };
+  }
+
+  // Prevent cycles: target cannot be the group itself or any descendant.
+  if (newParentId !== undefined) {
+    if (newParentId === groupId) return spec;
+    const descs = descendantGroupIds(groupId, spec.groups);
+    if (descs.has(newParentId)) return spec;
+  }
+
+  const updated: Group = {
+    ...group,
+    position: newPosition,
+    ...(newParentId !== undefined ? { parentGroupId: newParentId } : {}),
+  };
+  if (newParentId === undefined) {
+    delete (updated as Record<string, unknown>).parentGroupId;
+  }
+  const groups = [...spec.groups];
+  groups[gIdx] = updated;
+  return { ...spec, groups };
+}
+
 // ─── Move / Resize ─────────────────────────────────────────────────────
 
 export function moveNode(spec: ArchitextSpec, nodeId: string, position: Position): ArchitextSpec {
@@ -215,6 +258,22 @@ export function moveNode(spec: ArchitextSpec, nodeId: string, position: Position
   return spec;
 }
 
+/** Collect all transitive descendant group ids of a given group. */
+function descendantGroupIds(groupId: string, groups: readonly Group[]): Set<string> {
+  const result = new Set<string>();
+  const queue = [groupId];
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    for (const g of groups) {
+      if (g.parentGroupId === id && !result.has(g.id)) {
+        result.add(g.id);
+        queue.push(g.id);
+      }
+    }
+  }
+  return result;
+}
+
 export function resizeGroup(spec: ArchitextSpec, groupId: string, size: Size): ArchitextSpec {
   const idx = spec.groups.findIndex((g) => g.id === groupId);
   if (idx === -1) throw new Error(`Group not found: ${groupId}`);
@@ -223,23 +282,28 @@ export function resizeGroup(spec: ArchitextSpec, groupId: string, size: Size): A
   const oldW = oldGroup.size?.width ?? 400;
   const oldH = oldGroup.size?.height ?? 300;
 
-  const groups = [...spec.groups];
-  groups[idx] = { ...oldGroup, size };
-
-  // Proportionally rescale children's positions so they stay
-  // inside the group at any size. The user can zoom in/out on
-  // the canvas to inspect small groups or see the big picture.
   const scaleX = oldW > 0 ? size.width / oldW : 1;
   const scaleY = oldH > 0 ? size.height / oldH : 1;
 
+  // All descendant groups of the resized group share the same scale.
+  const descGroupIds = descendantGroupIds(groupId, spec.groups);
+  const affectedGroupIds = new Set([groupId, ...descGroupIds]);
+
+  const groups = spec.groups.map((g) => {
+    if (g.id === groupId) return { ...g, size };
+    if (!descGroupIds.has(g.id)) return g;
+    return {
+      ...g,
+      position: { x: Math.round((g.position?.x ?? 0) * scaleX), y: Math.round((g.position?.y ?? 0) * scaleY) },
+      size: { width: Math.round((g.size?.width ?? 400) * scaleX), height: Math.round((g.size?.height ?? 300) * scaleY) },
+    };
+  });
+
   const services = spec.services.map((s) => {
-    if (s.groupId !== groupId) return s;
+    if (!s.groupId || !affectedGroupIds.has(s.groupId)) return s;
     return {
       ...s,
-      position: {
-        x: Math.round((s.position?.x ?? 0) * scaleX),
-        y: Math.round((s.position?.y ?? 0) * scaleY),
-      },
+      position: { x: Math.round((s.position?.x ?? 0) * scaleX), y: Math.round((s.position?.y ?? 0) * scaleY) },
     };
   });
 

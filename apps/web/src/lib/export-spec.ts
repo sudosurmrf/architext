@@ -58,6 +58,7 @@ export function prepareForExport(spec: ArchitextSpec): ArchitextSpec {
       ...g,
       id: remap(g.id),
       serviceIds: g.serviceIds.map(remap),
+      ...(g.parentGroupId !== undefined ? { parentGroupId: remap(g.parentGroupId) } : {}),
     })),
     services: spec.services.map(({ position, ...s }) => ({
       ...s,

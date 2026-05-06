@@ -27,15 +27,14 @@ describe("canDrop — group-token", () => {
     expect(result.allowed).toBe(true);
   });
 
-  it("rejects group token inside existing group (no nesting)", () => {
+  it("allows group token inside existing group (nesting)", () => {
     const spec = makeSpec({
       groups: [
         { id: "g1", name: "G1", kind: "backend", serviceIds: [], position: { x: 0, y: 0 }, size: { width: 400, height: 300 } },
       ],
     });
     const result = canDrop(groupItem, inGroup, spec);
-    expect(result.allowed).toBe(false);
-    expect(result.reason).toContain("nesting");
+    expect(result.allowed).toBe(true);
   });
 
   it("rejects group token inside a service", () => {

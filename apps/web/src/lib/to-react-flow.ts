@@ -38,22 +38,27 @@ export interface RFGraph {
 
 /**
  * Converts an ArchitextSpec into React Flow nodes and edges.
- * Groups are emitted before their child services to satisfy RF parent ordering.
+ * Groups are topologically sorted so parents appear before children —
+ * React Flow requires this for parentId to work.
  */
 export function specToReactFlow(spec: ArchitextSpec): RFGraph {
   const nodes: Node[] = [];
 
-  // Groups first (parents must appear before children in RF)
-  for (const group of spec.groups) {
+  // Topological sort: emit groups whose parent is already placed first.
+  const placed = new Set<string>();
+  const remaining = [...spec.groups];
+  while (remaining.length > 0) {
+    const idx = remaining.findIndex((g) => !g.parentGroupId || placed.has(g.parentGroupId));
+    if (idx === -1) break;
+    const group = remaining.splice(idx, 1)[0]!;
+    placed.add(group.id);
     nodes.push(groupToNode(group));
   }
 
-  // Then services
   for (const service of spec.services) {
     nodes.push(serviceToNode(service));
   }
 
-  // Edges
   const edges: RFEdge[] = spec.edges.map(edgeToRFEdge);
 
   return { nodes, edges };
@@ -64,6 +69,7 @@ function groupToNode(group: Group): Node {
     id: group.id,
     type: "group",
     position: group.position ?? { x: 0, y: 0 },
+    ...(group.parentGroupId ? { parentId: group.parentGroupId } : {}),
     data: {
       name: group.name,
       kind: group.kind,

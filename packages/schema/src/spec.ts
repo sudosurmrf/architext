@@ -60,6 +60,25 @@ export const ArchitextSpecSchema = ArchitextSpecShape.superRefine((spec, ctx) =>
     }
   }
 
+  for (const [i, g] of spec.groups.entries()) {
+    if (g.parentGroupId !== undefined) {
+      if (!groupIds.has(g.parentGroupId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["groups", i, "parentGroupId"],
+          message: `group references unknown parent group id: ${g.parentGroupId}`,
+        });
+      }
+      if (g.parentGroupId === g.id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["groups", i, "parentGroupId"],
+          message: "group cannot be its own parent",
+        });
+      }
+    }
+  }
+
   for (const [i, s] of spec.services.entries()) {
     if (s.groupId !== undefined && !groupIds.has(s.groupId)) {
       ctx.addIssue({

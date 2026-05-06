@@ -97,12 +97,27 @@ export function handleCanvasDrop(
   switch (dragItem.type) {
     case "group-token": {
       const id = crypto.randomUUID();
+      let groupPos = flowPos;
+      let parentGroupId: string | undefined;
+
+      if (target.zone === "group") {
+        parentGroupId = target.groupId;
+        const parentGroup = spec.groups.find((g) => g.id === parentGroupId);
+        if (parentGroup) {
+          groupPos = {
+            x: flowPos.x - (parentGroup.position?.x ?? 0),
+            y: flowPos.y - (parentGroup.position?.y ?? 0),
+          };
+        }
+      }
+
       dispatch.addGroup({
         id,
         name: dragItem.name,
         kind: dragItem.groupKind,
-        position: flowPos,
+        position: groupPos,
         size: { width: 400, height: 300 },
+        parentGroupId,
       });
       return { dropped: true };
     }

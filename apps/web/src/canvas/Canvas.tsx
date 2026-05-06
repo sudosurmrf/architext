@@ -52,7 +52,6 @@ function CanvasInner() {
   const rfGraph = useSpecStore((s) => s.rfGraph);
   const spec = useSpecStore((s) => s.spec);
   const applyPositionChanges = useSpecStore((s) => s.applyPositionChanges);
-  const applyDimensionChanges = useSpecStore((s) => s.applyDimensionChanges);
   const applyNodeRemovals = useSpecStore((s) => s.applyNodeRemovals);
   const applyEdgeRemovals = useSpecStore((s) => s.applyEdgeRemovals);
   const dispatchAddGroup = useSpecStore((s) => s.addGroup);
@@ -60,6 +59,8 @@ function CanvasInner() {
   const dispatchAddComponent = useSpecStore((s) => s.addComponent);
   const dispatchAddEdge = useSpecStore((s) => s.addEdge);
   const dispatchReparent = useSpecStore((s) => s.reparentService);
+  const dispatchReparentGroup = useSpecStore((s) => s.reparentGroup);
+  const dispatchResizeGroup = useSpecStore((s) => s.resizeGroup);
 
   // ─── React Flow instance ──────────────────────────────────
   const rfInstance = useReactFlow();
@@ -113,84 +114,164 @@ function CanvasInner() {
     (changes: NodeChange[]) => {
       // Apply ALL changes to local state immediately — this is what
       // makes drag/resize visually smooth. RF can see the updated
-      // positions on the very next frame.
-      setLocalNodes((prev) => applyNodeChanges(changes, prev));
+      // positions on the very next frame. When a group is being
+      // resized, also proportionally adjust children so they scale
+      // with the group (flex-like behavior).
+      setLocalNodes((prev) => {
+        let nodes = applyNodeChanges(changes, prev) as Node[];
 
-      // On drag END, sync positions AND check if any service landed
-      // inside (or outside) a group — reparent if needed.
+        for (const change of changes) {
+          if (change.type !== "dimensions" || !change.dimensions || !change.resizing) continue;
+
+          const oldNode = prev.find((n) => n.id === change.id);
+          if (!oldNode || oldNode.type !== "group") continue;
+
+          const oldW = oldNode.measured?.width ?? (oldNode.style?.width as number | undefined) ?? 400;
+          const oldH = oldNode.measured?.height ?? (oldNode.style?.height as number | undefined) ?? 300;
+          if (oldW <= 0 || oldH <= 0) continue;
+
+          const scaleX = change.dimensions.width / oldW;
+          const scaleY = change.dimensions.height / oldH;
+
+          // Collect all descendants (services AND nested groups) via BFS.
+          const descendants = new Set<string>();
+          const queue = [change.id];
+          while (queue.length > 0) {
+            const pid = queue.shift()!;
+            for (const n of prev) {
+              if (n.parentId === pid && !descendants.has(n.id)) {
+                descendants.add(n.id);
+                queue.push(n.id);
+              }
+            }
+          }
+
+          nodes = nodes.map((n) => {
+            if (!descendants.has(n.id)) return n;
+            const scaled = {
+              ...n,
+              position: { x: Math.round(n.position.x * scaleX), y: Math.round(n.position.y * scaleY) },
+            };
+            if (n.type === "group") {
+              const w = n.measured?.width ?? (n.style?.width as number | undefined) ?? 400;
+              const h = n.measured?.height ?? (n.style?.height as number | undefined) ?? 300;
+              return { ...scaled, style: { ...scaled.style, width: Math.round(w * scaleX), height: Math.round(h * scaleY) } };
+            }
+            return scaled;
+          });
+        }
+
+        return nodes;
+      });
+
+      // On drag END, sync positions AND check if any node (service or
+      // group) landed inside a different group — reparent if needed.
       const positionEnds = changes.filter(
         (c): c is NodePositionChange =>
           c.type === "position" && c.dragging === false && c.position != null,
       );
       if (positionEnds.length > 0) {
         const currentSpec = useSpecStore.getState().spec;
+
+        // Walk up the parent chain to compute absolute canvas position.
+        const toAbsolute = (pos: { x: number; y: number }, parentId: string | undefined) => {
+          let x = pos.x, y = pos.y;
+          let pid = parentId;
+          while (pid) {
+            const pg = currentSpec.groups.find((g) => g.id === pid);
+            if (!pg) break;
+            x += pg.position?.x ?? 0;
+            y += pg.position?.y ?? 0;
+            pid = pg.parentGroupId;
+          }
+          return { x, y };
+        };
+
         for (const change of positionEnds) {
+          const rfNode = localNodes.find((n) => n.id === change.id);
+          const nodePos = change.position!;
+          const absPos = toAbsolute(nodePos, rfNode?.parentId);
+
           const service = currentSpec.services.find((s) => s.id === change.id);
-          if (!service) {
-            // It's a group move, not a service — just apply position.
-            applyPositionChanges([{ id: change.id, position: change.position! }]);
+          const draggedGroup = currentSpec.groups.find((g) => g.id === change.id);
+
+          if (!service && !draggedGroup) {
+            applyPositionChanges([{ id: change.id, position: nodePos }]);
             continue;
           }
 
-          // Find the node in localNodes to get its absolute position.
-          // RF reports position relative to parentId if set, so we need
-          // the absolute position for hit-testing against groups.
-          const rfNode = localNodes.find((n) => n.id === change.id);
-          const nodePos = change.position!;
-          let absPos = nodePos;
-          if (rfNode?.parentId) {
-            const parentGroup = currentSpec.groups.find((g) => g.id === rfNode.parentId);
-            const px = parentGroup?.position?.x ?? 0;
-            const py = parentGroup?.position?.y ?? 0;
-            absPos = { x: px + nodePos.x, y: py + nodePos.y };
-          }
+          // Center for hit-testing
+          const halfW = service ? 110 : (draggedGroup!.size?.width ?? 400) / 2;
+          const halfH = service ? 60 : (draggedGroup!.size?.height ?? 300) / 2;
+          const cx = absPos.x + halfW;
+          const cy = absPos.y + halfH;
 
-          // Hit-test: is the service's center inside any group?
-          const cx = absPos.x + 110;
-          const cy = absPos.y + 60;
-          let targetGroupId: string | undefined;
-          for (const group of currentSpec.groups) {
-            const gx = group.position?.x ?? 0;
-            const gy = group.position?.y ?? 0;
-            const gw = group.size?.width ?? 400;
-            const gh = group.size?.height ?? 300;
-            if (cx >= gx && cx <= gx + gw && cy >= gy && cy <= gy + gh) {
-              targetGroupId = group.id;
-              break;
+          // For groups: exclude self + descendants to prevent cycles.
+          const excluded = new Set<string>();
+          if (draggedGroup) {
+            excluded.add(draggedGroup.id);
+            const queue = [draggedGroup.id];
+            while (queue.length > 0) {
+              const id = queue.shift()!;
+              for (const g of currentSpec.groups) {
+                if (g.parentGroupId === id && !excluded.has(g.id)) {
+                  excluded.add(g.id);
+                  queue.push(g.id);
+                }
+              }
             }
           }
 
-          // Compute the position for the new parent context.
-          const newPosition = targetGroupId !== undefined
-            ? { x: absPos.x - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position?.x ?? 0),
-                y: absPos.y - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position?.y ?? 0) }
-            : absPos;
+          // Hit-test: find the smallest (innermost) group whose absolute
+          // bounds contain the dragged node's center.
+          let targetGroupId: string | undefined;
+          let bestArea = Infinity;
+          for (const group of currentSpec.groups) {
+            if (excluded.has(group.id)) continue;
+            const gAbs = toAbsolute(group.position ?? { x: 0, y: 0 }, group.parentGroupId);
+            const gw = group.size?.width ?? 400;
+            const gh = group.size?.height ?? 300;
+            if (cx >= gAbs.x && cx <= gAbs.x + gw && cy >= gAbs.y && cy <= gAbs.y + gh) {
+              const area = gw * gh;
+              if (area < bestArea) { targetGroupId = group.id; bestArea = area; }
+            }
+          }
 
-          if (targetGroupId !== service.groupId) {
-            // Reparent: moved into a different group (or out of a group).
-            dispatchReparent(service.id, targetGroupId, newPosition);
+          // Convert absolute position → relative to target group.
+          let newPosition = absPos;
+          if (targetGroupId !== undefined) {
+            const tg = currentSpec.groups.find((g) => g.id === targetGroupId)!;
+            const tAbs = toAbsolute(tg.position ?? { x: 0, y: 0 }, tg.parentGroupId);
+            newPosition = { x: absPos.x - tAbs.x, y: absPos.y - tAbs.y };
+          }
+
+          if (service) {
+            if (targetGroupId !== service.groupId) {
+              dispatchReparent(service.id, targetGroupId, newPosition);
+            } else {
+              applyPositionChanges([{ id: change.id, position: change.position! }]);
+            }
           } else {
-            // Same group (or still ungrouped) — just update position.
-            applyPositionChanges([{ id: change.id, position: change.position! }]);
+            if (targetGroupId !== draggedGroup!.parentGroupId) {
+              dispatchReparentGroup(draggedGroup!.id, targetGroupId, newPosition);
+            } else {
+              applyPositionChanges([{ id: change.id, position: change.position! }]);
+            }
           }
         }
       }
 
-      // On resize END, sync the final dimensions to the spec store.
+      // On resize END, commit to the spec via resizeGroup which
+      // proportionally rescales children from the original spec positions.
       const dimensionEnds = changes.filter(
         (c): c is NodeDimensionChange =>
           c.type === "dimensions" && c.dimensions != null && c.resizing === false,
       );
-      if (dimensionEnds.length > 0) {
-        applyDimensionChanges(
-          dimensionEnds.map((c) => ({
-            id: c.id,
-            dimensions: {
-              width: c.dimensions!.width,
-              height: c.dimensions!.height,
-            },
-          })),
-        );
+      for (const change of dimensionEnds) {
+        dispatchResizeGroup(change.id, {
+          width: change.dimensions!.width,
+          height: change.dimensions!.height,
+        });
       }
 
       // Removals go to spec store immediately.
@@ -201,7 +282,7 @@ function CanvasInner() {
         applyNodeRemovals(removeChanges.map((c) => c.id));
       }
     },
-    [applyPositionChanges, applyDimensionChanges, applyNodeRemovals, dispatchReparent, localNodes],
+    [applyPositionChanges, dispatchResizeGroup, applyNodeRemovals, dispatchReparent, dispatchReparentGroup, localNodes],
   );
 
   const handleEdgesChange = useCallback(

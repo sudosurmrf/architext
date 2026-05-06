@@ -25,6 +25,7 @@ import {
   resizeGroup,
   duplicateNode,
   reparentService,
+  reparentGroup,
   type AddGroupParams,
   type AddServiceParams,
 } from "../lib/spec-mutations";
@@ -68,6 +69,7 @@ export interface SpecState {
   resizeGroup: (groupId: string, size: Size) => void;
   duplicateNode: (nodeId: string, newId: string) => void;
   reparentService: (serviceId: string, newGroupId: string | undefined, newPosition: Position) => void;
+  reparentGroup: (groupId: string, newParentId: string | undefined, newPosition: Position) => void;
 
   // ─── React Flow sync ──────────────────────────────────
   applyPositionChanges: (changes: PositionChange[]) => void;
@@ -106,6 +108,8 @@ export const useSpecStore = create<SpecState>((set) => {
     duplicateNode: (nodeId, newId) => update((s) => duplicateNode(s, nodeId, newId)),
     reparentService: (serviceId, newGroupId, newPosition) =>
       update((s) => reparentService(s, serviceId, newGroupId, newPosition)),
+    reparentGroup: (groupId, newParentId, newPosition) =>
+      update((s) => reparentGroup(s, groupId, newParentId, newPosition)),
 
     applyPositionChanges: (changes) => update((s) => applyNodePositionChanges(s, changes)),
     applyDimensionChanges: (changes) => update((s) => applyNodeDimensionChanges(s, changes)),

@@ -58,7 +58,7 @@ export function canDrop(item: DragItem, target: DropTarget, spec: ArchitextSpec)
 
 function canDropGroup(target: DropTarget): DropResult {
   if (target.zone === "canvas") return ok;
-  if (target.zone === "group") return reject("Group nesting is not allowed in v1.");
+  if (target.zone === "group") return ok;
   return reject("Groups cannot be dropped inside a service.");
 }
 
