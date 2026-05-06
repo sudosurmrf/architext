@@ -1,0 +1,35 @@
+{
+  "paths": [
+    ".gitignore",
+    "Backend/api/.python-version",
+    "Backend/api/main.py",
+    "Backend/api/pyproject.toml",
+    "Backend/api/requirements.txt",
+    "Backend/db/schema.sql",
+    "README.md",
+    "architext-spec.json",
+    "web/index.html",
+    "web/src/App.tsx",
+    "web/src/main.tsx",
+    "web/tsconfig.json",
+    "web/vite.config.ts"
+  ],
+  "byService": {
+    "web": [
+      "web/index.html",
+      "web/src/App.tsx",
+      "web/src/main.tsx",
+      "web/tsconfig.json",
+      "web/vite.config.ts"
+    ],
+    "api": [
+      "Backend/api/.python-version",
+      "Backend/api/main.py",
+      "Backend/api/pyproject.toml",
+      "Backend/api/requirements.txt"
+    ],
+    "db": [
+      "Backend/db/schema.sql"
+    ]
+  }
+}

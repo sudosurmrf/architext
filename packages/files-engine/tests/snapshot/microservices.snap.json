@@ -1,0 +1,24 @@
+{
+  "paths": [
+    ".gitignore",
+    "README.md",
+    "Services/ingest/.nvmrc",
+    "Services/ingest/package.json",
+    "Services/ingest/src/index.js",
+    "Services/processor/.python-version",
+    "Services/processor/pyproject.toml",
+    "architext-spec.json"
+  ],
+  "byService": {
+    "ingest": [
+      "Services/ingest/.nvmrc",
+      "Services/ingest/package.json",
+      "Services/ingest/src/index.js"
+    ],
+    "processor": [
+      "Services/processor/.python-version",
+      "Services/processor/pyproject.toml"
+    ],
+    "broker": []
+  }
+}
