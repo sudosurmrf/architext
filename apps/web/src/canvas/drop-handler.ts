@@ -125,13 +125,27 @@ export function handleCanvasDrop(
 
     case "service-token": {
       const id = crypto.randomUUID();
-      const groupId =
-        target.zone === "group" ? target.groupId : undefined;
+      let servicePos = flowPos;
+      let groupId: string | undefined;
+
+      if (target.zone === "group") {
+        groupId = target.groupId;
+        const group = spec.groups.find((g) => g.id === groupId);
+        if (group) {
+          // React Flow positions child nodes relative to their parent.
+          // Convert absolute canvas position → relative to the group.
+          servicePos = {
+            x: flowPos.x - group.position.x,
+            y: flowPos.y - group.position.y,
+          };
+        }
+      }
+
       dispatch.addService({
         id,
         name: dragItem.name,
         kind: dragItem.serviceKind,
-        position: flowPos,
+        position: servicePos,
         components: [],
         groupId,
       });

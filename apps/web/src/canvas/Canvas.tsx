@@ -6,7 +6,7 @@
  * Consumed by: [[App]] (main canvas area)
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -16,6 +16,8 @@ import {
   Panel,
   ReactFlowProvider,
   useReactFlow,
+  applyNodeChanges,
+  type Node,
   type NodeChange,
   type EdgeChange,
   type NodePositionChange,
@@ -78,15 +80,23 @@ function CanvasInner() {
   const addToSelection = useUIStore((s) => s.addToSelection);
   const clearSelection = useUIStore((s) => s.clearSelection);
 
-  // ─── Apply selection state to nodes/edges ────────────────
-  const nodesWithSelection = useMemo(
-    () =>
+  // ─── Local node state for smooth drag/resize ──────────────
+  // React Flow needs to own node positions during drag and dimensions
+  // during resize for smooth visual updates. We keep a local copy that
+  // RF can mutate freely, and sync back to the spec store only on end.
+  const [localNodes, setLocalNodes] = useState<Node[]>([]);
+
+  // Re-sync local nodes from spec store whenever rfGraph changes
+  // (new nodes added, nodes removed, etc.) — but NOT during drag/resize
+  // since that would fight with RF's internal state.
+  useEffect(() => {
+    setLocalNodes(
       rfGraph.nodes.map((node) => ({
         ...node,
         selected: selectedIds.has(node.id),
       })),
-    [rfGraph.nodes, selectedIds],
-  );
+    );
+  }, [rfGraph.nodes, selectedIds]);
 
   const edgesWithSelection = useMemo(
     () =>
@@ -100,27 +110,33 @@ function CanvasInner() {
   // ─── Callbacks ───────────────────────────────────────────
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      // Position changes (drag end)
-      const positionChanges = changes.filter(
-        (c): c is NodePositionChange => c.type === "position" && c.dragging === false && c.position != null,
+      // Apply ALL changes to local state immediately — this is what
+      // makes drag/resize visually smooth. RF can see the updated
+      // positions on the very next frame.
+      setLocalNodes((prev) => applyNodeChanges(changes, prev));
+
+      // On drag END, sync the final positions to the spec store.
+      const positionEnds = changes.filter(
+        (c): c is NodePositionChange =>
+          c.type === "position" && c.dragging === false && c.position != null,
       );
-      if (positionChanges.length > 0) {
+      if (positionEnds.length > 0) {
         applyPositionChanges(
-          positionChanges.map((c) => ({
+          positionEnds.map((c) => ({
             id: c.id,
             position: c.position!,
           })),
         );
       }
 
-      // Dimension changes (resize end)
-      const dimensionChanges = changes.filter(
+      // On resize END, sync the final dimensions to the spec store.
+      const dimensionEnds = changes.filter(
         (c): c is NodeDimensionChange =>
           c.type === "dimensions" && c.dimensions != null && c.resizing === false,
       );
-      if (dimensionChanges.length > 0) {
+      if (dimensionEnds.length > 0) {
         applyDimensionChanges(
-          dimensionChanges.map((c) => ({
+          dimensionEnds.map((c) => ({
             id: c.id,
             dimensions: {
               width: c.dimensions!.width,
@@ -130,7 +146,7 @@ function CanvasInner() {
         );
       }
 
-      // Removals
+      // Removals go to spec store immediately.
       const removeChanges = changes.filter(
         (c): c is NodeRemoveChange => c.type === "remove",
       );
@@ -191,7 +207,7 @@ function CanvasInner() {
   return (
     <div className="relative h-full w-full" onDragOver={handleDragOver} onDrop={handleDrop}>
       <ReactFlow
-        nodes={nodesWithSelection}
+        nodes={localNodes}
         edges={edgesWithSelection}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
