@@ -8,3 +8,4 @@
 
 export * from "./version";
 export * from "./primitives";
+export * from "./project";
