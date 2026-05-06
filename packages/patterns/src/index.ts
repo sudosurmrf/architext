@@ -6,4 +6,4 @@
  * Consumed by: [[@architext/web]] (palette Architecture category)
  */
 
-export {};
+export * from "./types";
