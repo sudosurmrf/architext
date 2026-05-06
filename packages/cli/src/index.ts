@@ -6,4 +6,4 @@
  * Consumed by: tests, future programmatic consumers
  */
 
-export {};
+export * from "./errors";

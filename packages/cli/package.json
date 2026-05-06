@@ -29,7 +29,8 @@
     "@architext/schema": "workspace:*",
     "commander": "^12.0.0",
     "chalk": "^5.3.0",
-    "ora": "^8.0.1"
+    "ora": "^8.0.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
