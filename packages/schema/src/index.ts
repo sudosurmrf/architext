@@ -13,3 +13,4 @@ export * from "./group";
 export * from "./component";
 export * from "./service";
 export * from "./edge";
+export * from "./spec";
