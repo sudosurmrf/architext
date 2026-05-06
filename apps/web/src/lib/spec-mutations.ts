@@ -219,9 +219,31 @@ export function resizeGroup(spec: ArchitextSpec, groupId: string, size: Size): A
   const idx = spec.groups.findIndex((g) => g.id === groupId);
   if (idx === -1) throw new Error(`Group not found: ${groupId}`);
 
+  const oldGroup = spec.groups[idx]!;
+  const oldW = oldGroup.size.width;
+  const oldH = oldGroup.size.height;
+
   const groups = [...spec.groups];
-  groups[idx] = { ...groups[idx]!, size };
-  return { ...spec, groups };
+  groups[idx] = { ...oldGroup, size };
+
+  // Proportionally rescale children's positions so they stay
+  // inside the group at any size. The user can zoom in/out on
+  // the canvas to inspect small groups or see the big picture.
+  const scaleX = oldW > 0 ? size.width / oldW : 1;
+  const scaleY = oldH > 0 ? size.height / oldH : 1;
+
+  const services = spec.services.map((s) => {
+    if (s.groupId !== groupId) return s;
+    return {
+      ...s,
+      position: {
+        x: Math.round(s.position.x * scaleX),
+        y: Math.round(s.position.y * scaleY),
+      },
+    };
+  });
+
+  return { ...spec, groups, services };
 }
 
 // ─── Duplicate ──────────────────────────────────────────────────────────

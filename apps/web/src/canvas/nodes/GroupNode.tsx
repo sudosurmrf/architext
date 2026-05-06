@@ -54,8 +54,8 @@ export function GroupNode({ data, selected }: NodeProps<GroupNodeType>) {
       style={{ width: "100%", height: "100%" }}
     >
       <NodeResizer
-        minWidth={data.minWidth}
-        minHeight={data.minHeight}
+        minWidth={80}
+        minHeight={60}
         isVisible={selected ?? false}
         lineClassName="!border-blue-400"
         handleClassName="!h-2 !w-2 !rounded-sm !border-blue-400 !bg-white"
