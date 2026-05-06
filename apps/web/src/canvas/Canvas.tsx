@@ -14,6 +14,7 @@ import {
   Controls,
   MiniMap,
   ReactFlowProvider,
+  useReactFlow,
   type NodeChange,
   type EdgeChange,
   type NodePositionChange,
@@ -28,6 +29,7 @@ import { useUIStore } from "../store/ui-store";
 import { nodeTypes } from "./nodes/node-types";
 import { edgeTypes } from "./edges/edge-types";
 import { useEdgeCreation, EdgeCreationModal } from "./EdgeCreation";
+import { handleCanvasDrop } from "./drop-handler";
 
 /**
  * Main canvas component wrapping React Flow.
@@ -35,12 +37,28 @@ import { useEdgeCreation, EdgeCreationModal } from "./EdgeCreation";
  * and dispatches position/dimension/removal changes back to the store.
  */
 export function Canvas() {
+  return (
+    <ReactFlowProvider>
+      <CanvasInner />
+    </ReactFlowProvider>
+  );
+}
+
+function CanvasInner() {
   // ─── Store selectors ─────────────────────────────────────
   const rfGraph = useSpecStore((s) => s.rfGraph);
+  const spec = useSpecStore((s) => s.spec);
   const applyPositionChanges = useSpecStore((s) => s.applyPositionChanges);
   const applyDimensionChanges = useSpecStore((s) => s.applyDimensionChanges);
   const applyNodeRemovals = useSpecStore((s) => s.applyNodeRemovals);
   const applyEdgeRemovals = useSpecStore((s) => s.applyEdgeRemovals);
+  const dispatchAddGroup = useSpecStore((s) => s.addGroup);
+  const dispatchAddService = useSpecStore((s) => s.addService);
+  const dispatchAddComponent = useSpecStore((s) => s.addComponent);
+  const dispatchAddEdge = useSpecStore((s) => s.addEdge);
+
+  // ─── React Flow instance ──────────────────────────────────
+  const rfInstance = useReactFlow();
 
   // ─── Edge creation ──────────────────────────────────────
   const {
@@ -147,36 +165,53 @@ export function Canvas() {
     clearSelection();
   }, [clearSelection]);
 
+  // ─── Drag-and-drop ──────────────────────────────────────
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      handleCanvasDrop(e, rfInstance, spec, {
+        addGroup: dispatchAddGroup,
+        addService: dispatchAddService,
+        addComponent: dispatchAddComponent,
+        addEdge: dispatchAddEdge,
+      });
+    },
+    [rfInstance, spec, dispatchAddGroup, dispatchAddService, dispatchAddComponent, dispatchAddEdge],
+  );
+
   // ─── Render ──────────────────────────────────────────────
   return (
-    <ReactFlowProvider>
-      <div className="relative h-full w-full">
-        <ReactFlow
-          nodes={nodesWithSelection}
-          edges={edgesWithSelection}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={handleNodesChange}
-          onEdgesChange={handleEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={handleNodeClick}
-          onPaneClick={handlePaneClick}
-          fitView
-          snapToGrid
-          snapGrid={[16, 16]}
-        >
-          <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
-          <Controls />
-          <MiniMap />
-        </ReactFlow>
-        <EdgeCreationModal
-          pendingConnection={pendingConnection}
-          error={edgeError}
-          onCancel={onEdgeCancel}
-          onSelectProtocol={onSelectProtocol}
-          isDuplicate={isDuplicate}
-        />
-      </div>
-    </ReactFlowProvider>
+    <div className="relative h-full w-full" onDragOver={handleDragOver} onDrop={handleDrop}>
+      <ReactFlow
+        nodes={nodesWithSelection}
+        edges={edgesWithSelection}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={handleNodeClick}
+        onPaneClick={handlePaneClick}
+        fitView
+        snapToGrid
+        snapGrid={[16, 16]}
+      >
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+        <Controls />
+        <MiniMap />
+      </ReactFlow>
+      <EdgeCreationModal
+        pendingConnection={pendingConnection}
+        error={edgeError}
+        onCancel={onEdgeCancel}
+        onSelectProtocol={onSelectProtocol}
+        isDuplicate={isDuplicate}
+      />
+    </div>
   );
 }
