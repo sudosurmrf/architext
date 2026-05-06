@@ -28,7 +28,7 @@ export function makeCatalog(entries: readonly CatalogEntry[]): Catalog {
 
   const frozen = Object.freeze([...entries]) as readonly CatalogEntry[];
 
-  return Object.freeze({
+  const catalog: Catalog = {
     entries: frozen,
     byId: (id) => byIdMap.get(id),
     byCategory: (category) => frozen.filter((e) => e.category === category),
@@ -38,5 +38,6 @@ export function makeCatalog(entries: readonly CatalogEntry[]): Catalog {
       ),
     byKindIfService: (kind) =>
       frozen.filter((e) => e.dropsAs === "service" && e.serviceKindIfService === kind),
-  });
+  };
+  return Object.freeze(catalog);
 }
