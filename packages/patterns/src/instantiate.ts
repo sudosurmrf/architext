@@ -25,16 +25,41 @@ export function instantiatePattern(
   const groupIdMap = new Map<string, string>();
   const serviceIdMap = new Map<string, string>();
 
+  // Pre-compute group sizes from their children's offsets so frames
+  // actually contain all the services placed inside them.
+  const SERVICE_CARD_WIDTH = 220;
+  const SERVICE_CARD_HEIGHT = 120;
+  const GROUP_PADDING = 40;
+  const GROUP_HEADER = 40;
+
+  function computeGroupSize(tmpGroupId: string): { width: number; height: number } {
+    const children = pattern.fragment.services.filter((s) => s.tmpGroupId === tmpGroupId);
+    if (children.length === 0) return { width: 400, height: 300 };
+    let maxX = 0;
+    let maxY = 0;
+    for (const c of children) {
+      const ox = (c.offset?.x ?? 0) + SERVICE_CARD_WIDTH;
+      const oy = (c.offset?.y ?? 0) + SERVICE_CARD_HEIGHT;
+      if (ox > maxX) maxX = ox;
+      if (oy > maxY) maxY = oy;
+    }
+    return {
+      width: maxX + GROUP_PADDING * 2,
+      height: maxY + GROUP_PADDING + GROUP_HEADER,
+    };
+  }
+
   const groups: Group[] = (pattern.fragment.groups ?? []).map((g) => {
     const id = idGen();
     if (g.tmpId) groupIdMap.set(g.tmpId, id);
+    const size = g.tmpId !== undefined ? computeGroupSize(g.tmpId) : { width: 400, height: 300 };
     return {
       id,
       name: g.name,
       kind: g.kind,
       serviceIds: [],
       position: { x: dropPoint.x, y: dropPoint.y },
-      size: { width: 400, height: 300 },
+      size,
       ...(g.network !== undefined ? { network: g.network } : {}),
     };
   });

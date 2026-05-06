@@ -59,6 +59,7 @@ function CanvasInner() {
   const dispatchAddService = useSpecStore((s) => s.addService);
   const dispatchAddComponent = useSpecStore((s) => s.addComponent);
   const dispatchAddEdge = useSpecStore((s) => s.addEdge);
+  const dispatchReparent = useSpecStore((s) => s.reparentService);
 
   // ─── React Flow instance ──────────────────────────────────
   const rfInstance = useReactFlow();
@@ -115,18 +116,68 @@ function CanvasInner() {
       // positions on the very next frame.
       setLocalNodes((prev) => applyNodeChanges(changes, prev));
 
-      // On drag END, sync the final positions to the spec store.
+      // On drag END, sync positions AND check if any service landed
+      // inside (or outside) a group — reparent if needed.
       const positionEnds = changes.filter(
         (c): c is NodePositionChange =>
           c.type === "position" && c.dragging === false && c.position != null,
       );
       if (positionEnds.length > 0) {
-        applyPositionChanges(
-          positionEnds.map((c) => ({
-            id: c.id,
-            position: c.position!,
-          })),
-        );
+        const currentSpec = useSpecStore.getState().spec;
+        for (const change of positionEnds) {
+          const service = currentSpec.services.find((s) => s.id === change.id);
+          if (!service) {
+            // It's a group move, not a service — just apply position.
+            applyPositionChanges([{ id: change.id, position: change.position! }]);
+            continue;
+          }
+
+          // Find the node in localNodes to get its absolute position.
+          // RF reports position relative to parentId if set, so we need
+          // the absolute position for hit-testing against groups.
+          const rfNode = localNodes.find((n) => n.id === change.id);
+          const nodePos = change.position!;
+          let absPos = nodePos;
+          if (rfNode?.parentId) {
+            const parentGroup = currentSpec.groups.find((g) => g.id === rfNode.parentId);
+            if (parentGroup) {
+              absPos = {
+                x: parentGroup.position.x + nodePos.x,
+                y: parentGroup.position.y + nodePos.y,
+              };
+            }
+          }
+
+          // Hit-test: is the service's center inside any group?
+          const cx = absPos.x + 110; // approximate center (service card ~220px wide)
+          const cy = absPos.y + 60;  // approximate center (~120px tall)
+          let targetGroupId: string | undefined;
+          for (const group of currentSpec.groups) {
+            if (
+              cx >= group.position.x &&
+              cx <= group.position.x + group.size.width &&
+              cy >= group.position.y &&
+              cy <= group.position.y + group.size.height
+            ) {
+              targetGroupId = group.id;
+              break;
+            }
+          }
+
+          // Compute the position for the new parent context.
+          const newPosition = targetGroupId !== undefined
+            ? { x: absPos.x - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position.x ?? 0),
+                y: absPos.y - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position.y ?? 0) }
+            : absPos;
+
+          if (targetGroupId !== service.groupId) {
+            // Reparent: moved into a different group (or out of a group).
+            dispatchReparent(service.id, targetGroupId, newPosition);
+          } else {
+            // Same group (or still ungrouped) — just update position.
+            applyPositionChanges([{ id: change.id, position: change.position! }]);
+          }
+        }
       }
 
       // On resize END, sync the final dimensions to the spec store.
@@ -154,7 +205,7 @@ function CanvasInner() {
         applyNodeRemovals(removeChanges.map((c) => c.id));
       }
     },
-    [applyPositionChanges, applyDimensionChanges, applyNodeRemovals],
+    [applyPositionChanges, applyDimensionChanges, applyNodeRemovals, dispatchReparent, localNodes],
   );
 
   const handleEdgesChange = useCallback(

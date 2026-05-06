@@ -140,6 +140,59 @@ export function addEdge(spec: ArchitextSpec, edge: Edge): ArchitextSpec {
   return { ...spec, edges: [...spec.edges, edge] };
 }
 
+// ─── Reparent ──────────────────────────────────────────────────────────
+
+export function reparentService(
+  spec: ArchitextSpec,
+  serviceId: string,
+  newGroupId: string | undefined,
+  newPosition: Position,
+): ArchitextSpec {
+  const sIdx = spec.services.findIndex((s) => s.id === serviceId);
+  if (sIdx === -1) return spec;
+
+  const service = spec.services[sIdx]!;
+  const oldGroupId = service.groupId;
+  if (oldGroupId === newGroupId) {
+    // Same group (or both ungrouped) — just update position.
+    const services = [...spec.services];
+    services[sIdx] = { ...service, position: newPosition };
+    return { ...spec, services };
+  }
+
+  // Update the service's groupId + position.
+  const updatedService: Service = {
+    ...service,
+    position: newPosition,
+    ...(newGroupId !== undefined ? { groupId: newGroupId } : {}),
+  };
+  // If removing from group, strip groupId entirely.
+  if (newGroupId === undefined) {
+    delete (updatedService as Record<string, unknown>).groupId;
+  }
+  const services = [...spec.services];
+  services[sIdx] = updatedService;
+
+  // Update group serviceIds arrays.
+  let groups = spec.groups;
+  if (oldGroupId !== undefined) {
+    groups = groups.map((g) =>
+      g.id === oldGroupId
+        ? { ...g, serviceIds: g.serviceIds.filter((sid) => sid !== serviceId) }
+        : g,
+    );
+  }
+  if (newGroupId !== undefined) {
+    groups = groups.map((g) =>
+      g.id === newGroupId && !g.serviceIds.includes(serviceId)
+        ? { ...g, serviceIds: [...g.serviceIds, serviceId] }
+        : g,
+    );
+  }
+
+  return { ...spec, groups, services };
+}
+
 // ─── Move / Resize ─────────────────────────────────────────────────────
 
 export function moveNode(spec: ArchitextSpec, nodeId: string, position: Position): ArchitextSpec {
