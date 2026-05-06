@@ -87,13 +87,29 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
   // 6. Spawn backend.
   const run = opts.backend.spawn(fullPrompt, { cwd: target });
 
-  // 7. Stream stdout lines through the write callback.
-  (async () => {
+  // 7. Stream stdout lines through the write callback. Capture the iterator
+  //    promise so we can drain it before printing the summary line — otherwise
+  //    real backends with async stdout (Task 13's ClaudeCodeBackend) would
+  //    interleave or lose trailing lines because run.done can resolve before
+  //    the iterator finishes.
+  let streamError: Error | undefined;
+  const stdoutDone = (async () => {
     for await (const line of run.stdoutLines) opts.write(line);
-  })().catch((err) => opts.write(`stdout stream error: ${(err as Error).message}`));
+  })().catch((err) => {
+    streamError = err as Error;
+    opts.write(`stdout stream error: ${streamError.message}`);
+  });
 
-  // 8. Await result and translate to exit code.
+  // 8. Await result and the stdout drain, then translate to exit code.
   const result = await run.done;
+  await stdoutDone;
+
+  // If the stream errored, prefer the crashed exit code over the backend's
+  // self-reported success — a broken transport means we can't trust "done".
+  if (streamError !== undefined && result.kind === "done") {
+    return ExitCode.AgentCrashed;
+  }
+
   switch (result.kind) {
     case "done":
       opts.write(
