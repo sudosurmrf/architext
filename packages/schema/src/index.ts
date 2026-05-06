@@ -6,6 +6,4 @@
  * Consumed by: [[@architext/web]], [[@architext/cli]], [[@architext/files-engine]]
  */
 
-// Public API for @architext/schema.
-// Each entity is defined in its own module; this file re-exports the surface.
-export {};
+export * from "./version";
