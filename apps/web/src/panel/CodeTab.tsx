@@ -173,10 +173,10 @@ function ServiceCard({ service, relatedEdges, apiKey }: ServiceCardProps) {
       <div className="px-3 py-2">
         <button
           onClick={handleGenerate}
-          disabled={loading}
+          disabled={loading || !apiKey}
           className={
             "w-full rounded-md px-3 py-1.5 text-sm font-medium transition-colors " +
-            (loading
+            (loading || !apiKey
               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
               : "bg-blue-50 text-blue-600 hover:bg-blue-100")
           }
@@ -280,34 +280,51 @@ export function CodeTab() {
 
   return (
     <div className="p-3 space-y-3">
-      {/* API key input */}
-      <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-gray-600">
-          Anthropic API Key
-        </label>
-        <div className="flex gap-1">
-          <input
-            type={showKey ? "text" : "password"}
-            value={apiKey}
-            onChange={handleKeyChange}
-            placeholder="sk-ant-..."
-            className="flex-1 min-w-0 rounded-md border border-gray-300 px-2 py-1.5 text-xs font-mono text-gray-700 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-          />
-          <button
-            onClick={() => setShowKey((v) => !v)}
-            className="shrink-0 rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
-            title={showKey ? "Hide key" : "Show key"}
-          >
-            {showKey ? "Hide" : "Show"}
-          </button>
-        </div>
-        {!apiKey && (
-          <p className="text-xs text-gray-400 leading-snug">
-            Enter your Anthropic API key to enable code preview. Your key stays
-            in your browser and is never sent to our servers.
+      {/* API key banner — prominent when missing, compact when set */}
+      {!apiKey ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+          <p className="text-xs font-medium text-amber-800">
+            API key required for code preview
           </p>
-        )}
-      </div>
+          <p className="text-xs text-amber-700 leading-snug">
+            Add your Anthropic API key to generate code previews for each service.
+            Your key stays in your browser and is never sent to our servers.
+          </p>
+          <div className="flex gap-1">
+            <input
+              type={showKey ? "text" : "password"}
+              value={apiKey}
+              onChange={handleKeyChange}
+              placeholder="sk-ant-..."
+              className="flex-1 min-w-0 rounded-md border border-amber-300 bg-white px-2 py-1.5 text-xs font-mono text-gray-700 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+            <button
+              onClick={() => setShowKey((v) => !v)}
+              className="shrink-0 rounded-md border border-amber-300 bg-white px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+            >
+              {showKey ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex gap-1">
+            <input
+              type={showKey ? "text" : "password"}
+              value={apiKey}
+              onChange={handleKeyChange}
+              placeholder="sk-ant-..."
+              className="flex-1 min-w-0 rounded-md border border-gray-300 px-2 py-1.5 text-xs font-mono text-gray-700 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+            <button
+              onClick={() => setShowKey((v) => !v)}
+              className="shrink-0 rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+            >
+              {showKey ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Service cards */}
       <h3 className="text-sm font-medium text-gray-700">Code Preview</h3>
