@@ -22,6 +22,7 @@ import { useUIStore } from "./store/ui-store";
 import { SpecHistory } from "./store/history";
 import { loadSpec, loadHistory } from "./persistence/idb";
 import { startAutoSave } from "./persistence/auto-save";
+import { prepareForExport } from "./lib/export-spec";
 
 export function App() {
   const historyRef = useRef<SpecHistory | null>(null);
@@ -79,7 +80,7 @@ export function App() {
   // ─── Download handler (reused by Ctrl+S shortcut) ─────────────
   const handleExportDownload = useCallback(() => {
     const spec = useSpecStore.getState().spec;
-    const json = JSON.stringify(spec, null, 2);
+    const json = JSON.stringify(prepareForExport(spec), null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

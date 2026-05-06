@@ -6,8 +6,9 @@
  * Consumed by: [[SidePanel]] (tab content)
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSpecStore } from "../store/spec-store";
+import { prepareForExport } from "../lib/export-spec";
 import type { Highlighter } from "shiki";
 
 let highlighterPromise: Promise<Highlighter> | undefined;
@@ -26,7 +27,8 @@ function getHighlighterSingleton(): Promise<Highlighter> {
 
 export function SpecTab() {
   const spec = useSpecStore((s) => s.spec);
-  const jsonString = JSON.stringify(spec, null, 2);
+  const leanSpec = useMemo(() => prepareForExport(spec), [spec]);
+  const jsonString = JSON.stringify(leanSpec, null, 2);
 
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
 

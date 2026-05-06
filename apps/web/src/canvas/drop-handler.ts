@@ -13,6 +13,8 @@ import type { DragItem, DropTarget } from "../types/drag";
 import { canDrop } from "../lib/can-drop";
 import type { SpecState } from "../store/spec-store";
 
+const RF_NODE_SELECTOR = ".react-flow__node";
+
 export interface DropHandlerResult {
   dropped: boolean;
   message?: string;
@@ -24,47 +26,30 @@ type SpecDispatch = Pick<
 >;
 
 /**
- * Determine the DropTarget from the canvas coordinates and current spec.
- * Checks if the drop position is inside a group bounds or a service bounds.
+ * Determine the DropTarget using the DOM element under the cursor.
+ * React Flow wraps every node in a div with class "react-flow__node" and
+ * a data-id attribute, so we walk up the DOM from the element at the drop
+ * point. This handles grouped (child) nodes correctly — Element.closest()
+ * finds the innermost node first, so a service inside a group resolves as
+ * a service, not the group.
  */
 export function resolveDropTarget(
   clientX: number,
   clientY: number,
-  rfInstance: ReactFlowInstance,
   spec: ArchitextSpec,
 ): DropTarget {
-  const position = rfInstance.screenToFlowPosition({ x: clientX, y: clientY });
+  const el = document.elementFromPoint(clientX, clientY);
+  const nodeEl = el?.closest<HTMLElement>(RF_NODE_SELECTOR);
 
-  // Check services first (more specific target)
-  for (const service of spec.services) {
-    const sx = service.position?.x ?? 0;
-    const sy = service.position?.y ?? 0;
-    // Service nodes have an approximate size; use a reasonable default
-    const sw = 200;
-    const sh = 100;
-    if (
-      position.x >= sx &&
-      position.x <= sx + sw &&
-      position.y >= sy &&
-      position.y <= sy + sh
-    ) {
-      return { zone: "service", serviceId: service.id };
-    }
-  }
-
-  // Check groups
-  for (const group of spec.groups) {
-    const gx = group.position?.x ?? 0;
-    const gy = group.position?.y ?? 0;
-    const gw = group.size?.width ?? 400;
-    const gh = group.size?.height ?? 300;
-    if (
-      position.x >= gx &&
-      position.x <= gx + gw &&
-      position.y >= gy &&
-      position.y <= gy + gh
-    ) {
-      return { zone: "group", groupId: group.id };
+  if (nodeEl) {
+    const nodeId = nodeEl.dataset.id;
+    if (nodeId) {
+      if (spec.services.some((s) => s.id === nodeId)) {
+        return { zone: "service", serviceId: nodeId };
+      }
+      if (spec.groups.some((g) => g.id === nodeId)) {
+        return { zone: "group", groupId: nodeId };
+      }
     }
   }
 
@@ -95,7 +80,6 @@ export function handleCanvasDrop(
   const target = resolveDropTarget(
     event.clientX,
     event.clientY,
-    rfInstance,
     spec,
   );
   const result = canDrop(dragItem, target, spec);
