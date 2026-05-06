@@ -13,3 +13,4 @@ export * from "./agent/backend";
 export * from "./agent/mock";
 export * from "./agent/claude-code";
 export * from "./agent/select";
+export * from "./status";
