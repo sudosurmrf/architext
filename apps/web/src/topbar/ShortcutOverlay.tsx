@@ -33,10 +33,9 @@ export function ShortcutOverlay({ open, onClose }: ShortcutOverlayProps) {
   );
 
   useEffect(() => {
-    if (open) {
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
+    if (!open) return;
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, handleKeyDown]);
 
   if (!open) return null;
