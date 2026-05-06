@@ -6,4 +6,4 @@
  * Consumed by: [[@architext/web]] (palette rail), [[@architext/files-engine]] (rule lookup), [[@architext/cli]] (prompt enrichment)
  */
 
-export {};
+export * from "./types";
