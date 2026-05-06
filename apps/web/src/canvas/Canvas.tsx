@@ -13,6 +13,7 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
+  Panel,
   ReactFlowProvider,
   useReactFlow,
   type NodeChange,
@@ -69,6 +70,8 @@ function CanvasInner() {
     onSelectProtocol,
     isDuplicate,
   } = useEdgeCreation();
+
+  const isEmpty = spec.services.length === 0 && spec.groups.length === 0;
 
   const selectedIds = useUIStore((s) => s.selectedIds);
   const select = useUIStore((s) => s.select);
@@ -204,6 +207,18 @@ function CanvasInner() {
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
         <Controls />
         <MiniMap />
+        {isEmpty && (
+          <Panel position="top-center">
+            <div className="mt-48 select-none text-center">
+              <p className="text-lg text-gray-400">
+                Drag items from the palette to start building
+              </p>
+              <p className="mt-1 text-sm text-gray-300">
+                Or drop a pattern to start quickly
+              </p>
+            </div>
+          </Panel>
+        )}
       </ReactFlow>
       <EdgeCreationModal
         pendingConnection={pendingConnection}
