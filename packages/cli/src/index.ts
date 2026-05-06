@@ -10,3 +10,4 @@ export * from "./errors";
 export * from "./prompt/load";
 export * from "./prompt/build";
 export * from "./agent/backend";
+export * from "./agent/mock";
