@@ -17,3 +17,4 @@ export * from "./status";
 export * from "./commands/validate";
 export * from "./commands/init";
 export * from "./commands/apply";
+export * from "./cli";

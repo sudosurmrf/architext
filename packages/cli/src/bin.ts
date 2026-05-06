@@ -6,5 +6,6 @@
  * Consumed by: end users via `npx architext`
  */
 
-// Filled in by Task 14. For now, a no-op so the bin field has a valid file.
-process.exit(0);
+import { runCli } from "./cli";
+
+runCli(process.argv).then((code) => process.exit(code));
