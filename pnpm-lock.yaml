@@ -31,6 +31,25 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1
 
+  packages/patterns:
+    dependencies:
+      '@architext/schema':
+        specifier: workspace:*
+        version: link:../schema
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      tsup:
+        specifier: ^8.0.2
+        version: 8.5.1(postcss@8.5.14)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1
+
   packages/schema:
     dependencies:
       zod:
