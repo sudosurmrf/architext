@@ -12,3 +12,4 @@ export * from "./project";
 export * from "./group";
 export * from "./component";
 export * from "./service";
+export * from "./edge";
