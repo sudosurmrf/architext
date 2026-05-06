@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { ArchitextSpecSchema } from "@architext/schema";
 import { useSpecStore } from "../store/spec-store";
+import { prepareForExport } from "../lib/export-spec";
 
 export interface ExportModalProps {
   open: boolean;
@@ -28,7 +29,8 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  const jsonString = useMemo(() => JSON.stringify(spec, null, 2), [spec]);
+  const exportedSpec = useMemo(() => prepareForExport(spec), [spec]);
+  const jsonString = useMemo(() => JSON.stringify(exportedSpec, null, 2), [exportedSpec]);
 
   const jsonPreview = useMemo(() => {
     const lines = jsonString.split("\n");
@@ -39,12 +41,12 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
   }, [jsonString]);
 
   const validationErrors = useMemo(() => {
-    const result = ArchitextSpecSchema.safeParse(spec);
+    const result = ArchitextSpecSchema.safeParse(exportedSpec);
     if (result.success) return [];
     return result.error.issues.map(
       (issue) => `${issue.path.join(".")}: ${issue.message}`,
     );
-  }, [spec]);
+  }, [exportedSpec]);
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([jsonString], { type: "application/json" });

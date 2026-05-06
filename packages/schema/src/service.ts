@@ -27,7 +27,7 @@ export const ServiceSchema = z.object({
   name: z.string().min(1),
   kind: ServiceKindSchema,
   groupId: IdSchema.optional(),
-  position: PositionSchema,
+  position: PositionSchema.optional(),
   components: z
     .array(ComponentSchema)
     .refine(

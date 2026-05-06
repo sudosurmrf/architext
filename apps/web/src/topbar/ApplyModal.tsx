@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { Check, Copy } from "lucide-react";
 import { useSpecStore } from "../store/spec-store";
+import { prepareForExport } from "../lib/export-spec";
 
 export interface ApplyModalProps {
   open: boolean;
@@ -42,7 +43,8 @@ export function ApplyModal({ open, onClose }: ApplyModalProps) {
     setTimeout(() => setCopied(false), 2000);
   }, []);
 
-  const jsonString = useMemo(() => JSON.stringify(spec, null, 2), [spec]);
+  const exportedSpec = useMemo(() => prepareForExport(spec), [spec]);
+  const jsonString = useMemo(() => JSON.stringify(exportedSpec, null, 2), [exportedSpec]);
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([jsonString], { type: "application/json" });

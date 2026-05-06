@@ -140,25 +140,21 @@ function CanvasInner() {
           let absPos = nodePos;
           if (rfNode?.parentId) {
             const parentGroup = currentSpec.groups.find((g) => g.id === rfNode.parentId);
-            if (parentGroup) {
-              absPos = {
-                x: parentGroup.position.x + nodePos.x,
-                y: parentGroup.position.y + nodePos.y,
-              };
-            }
+            const px = parentGroup?.position?.x ?? 0;
+            const py = parentGroup?.position?.y ?? 0;
+            absPos = { x: px + nodePos.x, y: py + nodePos.y };
           }
 
           // Hit-test: is the service's center inside any group?
-          const cx = absPos.x + 110; // approximate center (service card ~220px wide)
-          const cy = absPos.y + 60;  // approximate center (~120px tall)
+          const cx = absPos.x + 110;
+          const cy = absPos.y + 60;
           let targetGroupId: string | undefined;
           for (const group of currentSpec.groups) {
-            if (
-              cx >= group.position.x &&
-              cx <= group.position.x + group.size.width &&
-              cy >= group.position.y &&
-              cy <= group.position.y + group.size.height
-            ) {
+            const gx = group.position?.x ?? 0;
+            const gy = group.position?.y ?? 0;
+            const gw = group.size?.width ?? 400;
+            const gh = group.size?.height ?? 300;
+            if (cx >= gx && cx <= gx + gw && cy >= gy && cy <= gy + gh) {
               targetGroupId = group.id;
               break;
             }
@@ -166,8 +162,8 @@ function CanvasInner() {
 
           // Compute the position for the new parent context.
           const newPosition = targetGroupId !== undefined
-            ? { x: absPos.x - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position.x ?? 0),
-                y: absPos.y - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position.y ?? 0) }
+            ? { x: absPos.x - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position?.x ?? 0),
+                y: absPos.y - (currentSpec.groups.find((g) => g.id === targetGroupId)?.position?.y ?? 0) }
             : absPos;
 
           if (targetGroupId !== service.groupId) {

@@ -220,8 +220,8 @@ export function resizeGroup(spec: ArchitextSpec, groupId: string, size: Size): A
   if (idx === -1) throw new Error(`Group not found: ${groupId}`);
 
   const oldGroup = spec.groups[idx]!;
-  const oldW = oldGroup.size.width;
-  const oldH = oldGroup.size.height;
+  const oldW = oldGroup.size?.width ?? 400;
+  const oldH = oldGroup.size?.height ?? 300;
 
   const groups = [...spec.groups];
   groups[idx] = { ...oldGroup, size };
@@ -237,8 +237,8 @@ export function resizeGroup(spec: ArchitextSpec, groupId: string, size: Size): A
     return {
       ...s,
       position: {
-        x: Math.round(s.position.x * scaleX),
-        y: Math.round(s.position.y * scaleY),
+        x: Math.round((s.position?.x ?? 0) * scaleX),
+        y: Math.round((s.position?.y ?? 0) * scaleY),
       },
     };
   });
@@ -263,7 +263,7 @@ export function duplicateNode(
       id: newId,
       name: `${group.name} (copy)`,
       serviceIds: [],
-      position: { x: group.position.x + DUP_OFFSET, y: group.position.y + DUP_OFFSET },
+      position: { x: (group.position?.x ?? 0) + DUP_OFFSET, y: (group.position?.y ?? 0) + DUP_OFFSET },
     };
     return { ...spec, groups: [...spec.groups, dup] };
   }
@@ -276,7 +276,7 @@ export function duplicateNode(
       id: newId,
       name: `${service.name} (copy)`,
       groupId: service.groupId,
-      position: { x: service.position.x + DUP_OFFSET, y: service.position.y + DUP_OFFSET },
+      position: { x: (service.position?.x ?? 0) + DUP_OFFSET, y: (service.position?.y ?? 0) + DUP_OFFSET },
     };
     // If in a group, update the group's serviceIds too
     let groups = spec.groups;

@@ -63,15 +63,15 @@ function groupToNode(group: Group): Node {
   return {
     id: group.id,
     type: "group",
-    position: group.position,
+    position: group.position ?? { x: 0, y: 0 },
     data: {
       name: group.name,
       kind: group.kind,
       ...(group.network ? { network: group.network } : {}),
     } satisfies GroupNodeData,
     style: {
-      width: group.size.width,
-      height: group.size.height,
+      width: group.size?.width ?? 400,
+      height: group.size?.height ?? 300,
     },
     draggable: true,
     selectable: true,
@@ -82,7 +82,7 @@ function serviceToNode(service: Service): Node {
   return {
     id: service.id,
     type: "service",
-    position: service.position,
+    position: service.position ?? { x: 0, y: 0 },
     ...(service.groupId ? { parentId: service.groupId } : {}),
     data: {
       name: service.name,

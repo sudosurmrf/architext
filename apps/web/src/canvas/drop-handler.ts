@@ -37,8 +37,8 @@ export function resolveDropTarget(
 
   // Check services first (more specific target)
   for (const service of spec.services) {
-    const sx = service.position.x;
-    const sy = service.position.y;
+    const sx = service.position?.x ?? 0;
+    const sy = service.position?.y ?? 0;
     // Service nodes have an approximate size; use a reasonable default
     const sw = 200;
     const sh = 100;
@@ -54,10 +54,10 @@ export function resolveDropTarget(
 
   // Check groups
   for (const group of spec.groups) {
-    const gx = group.position.x;
-    const gy = group.position.y;
-    const gw = group.size.width;
-    const gh = group.size.height;
+    const gx = group.position?.x ?? 0;
+    const gy = group.position?.y ?? 0;
+    const gw = group.size?.width ?? 400;
+    const gh = group.size?.height ?? 300;
     if (
       position.x >= gx &&
       position.x <= gx + gw &&
@@ -135,8 +135,8 @@ export function handleCanvasDrop(
           // React Flow positions child nodes relative to their parent.
           // Convert absolute canvas position → relative to the group.
           servicePos = {
-            x: flowPos.x - group.position.x,
-            y: flowPos.y - group.position.y,
+            x: flowPos.x - (group.position?.x ?? 0),
+            y: flowPos.y - (group.position?.y ?? 0),
           };
         }
       }
@@ -182,8 +182,8 @@ export function handleCanvasDrop(
           id: group.id,
           name: group.name,
           kind: group.kind,
-          position: group.position,
-          size: group.size,
+          position: group.position ?? { x: 0, y: 0 },
+          size: group.size ?? { width: 400, height: 300 },
           network: group.network,
         });
       }
@@ -192,7 +192,7 @@ export function handleCanvasDrop(
           id: service.id,
           name: service.name,
           kind: service.kind,
-          position: service.position,
+          position: service.position ?? { x: 0, y: 0 },
           components: service.components,
           groupId: service.groupId,
         });

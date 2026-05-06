@@ -33,8 +33,8 @@ export const GroupSchema = z.object({
       (ids) => new Set(ids).size === ids.length,
       { message: "serviceIds must be unique" }
     ),
-  position: PositionSchema,
-  size: SizeSchema,
+  position: PositionSchema.optional(),
+  size: SizeSchema.optional(),
   network: GroupNetworkSchema.optional(),
 });
 export type Group = z.infer<typeof GroupSchema>;
