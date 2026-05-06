@@ -38,13 +38,15 @@ describe("instantiatePattern", () => {
     }
   });
 
-  it("offsets service positions by drop point", () => {
+  it("stores group-relative positions for grouped services, absolute for ungrouped", () => {
     let n = 0;
     const result = instantiatePattern(pattern, { x: 100, y: 100 }, () => `id-${++n}`);
     const api = result.services.find((s) => s.name === "api")!;
     const db = result.services.find((s) => s.name === "db")!;
-    expect(api.position).toEqual({ x: 100, y: 100 });
-    expect(db.position).toEqual({ x: 300, y: 150 });
+    // api is inside group g1 → position is relative to the group (just the offset)
+    expect(api.position).toEqual({ x: 0, y: 0 });
+    // db is also inside group g1 → relative position is the offset {200, 50}
+    expect(db.position).toEqual({ x: 200, y: 50 });
   });
 
   it("re-points service.groupId to the new group id", () => {

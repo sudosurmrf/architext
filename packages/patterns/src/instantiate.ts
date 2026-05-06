@@ -52,7 +52,9 @@ export function instantiatePattern(
       name: s.name,
       kind: s.kind,
       ...(groupId !== undefined ? { groupId } : {}),
-      position: { x: dropPoint.x + offset.x, y: dropPoint.y + offset.y },
+      position: groupId !== undefined
+        ? { x: offset.x, y: offset.y }
+        : { x: dropPoint.x + offset.x, y: dropPoint.y + offset.y },
       components: (s.components ?? []).map((c) => ({
         id: c.id,
         category: c.category,
