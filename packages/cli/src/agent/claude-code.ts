@@ -33,30 +33,59 @@ export class ClaudeCodeBackend implements AgentBackend {
     const stderrChunks: string[] = [];
     proc.stderr.on("data", (chunk: Buffer) => {
       stderrChunks.push(chunk.toString("utf-8"));
-      // Keep only last ~50 lines worth.
       while (stderrChunks.join("").length > 8192) stderrChunks.shift();
     });
 
-    let resolveLines!: (lines: AsyncIterable<string>) => void;
-    const linesPromise: Promise<AsyncIterable<string>> = new Promise((r) => {
-      resolveLines = r;
+    // Single readline reader; tee each line into both the public iterator
+    // queue (consumed by callers via `stdoutLines`) and the internal ring
+    // buffer used for sentinel detection at exit time.
+    const lastOutLines: string[] = [];
+    const lineQueue: string[] = [];
+    let pendingResolve: ((line: string | null) => void) | undefined;
+    let streamEnded = false;
+
+    const rl = createInterface({ input: proc.stdout, crlfDelay: Infinity });
+    rl.on("line", (line) => {
+      lastOutLines.push(line);
+      if (lastOutLines.length > 200) lastOutLines.shift();
+      if (pendingResolve !== undefined) {
+        const fn = pendingResolve;
+        pendingResolve = undefined;
+        fn(line);
+      } else {
+        lineQueue.push(line);
+      }
+    });
+    rl.on("close", () => {
+      streamEnded = true;
+      if (pendingResolve !== undefined) {
+        const fn = pendingResolve;
+        pendingResolve = undefined;
+        fn(null);
+      }
     });
 
-    const linesIter = (async function* () {
-      const rl = createInterface({ input: proc.stdout, crlfDelay: Infinity });
-      for await (const line of rl) yield line;
-    })();
-    resolveLines(linesIter);
-    void linesPromise; // keep variable to silence "unused" warnings under strict mode
+    const stdoutLines: AsyncIterable<string> = {
+      [Symbol.asyncIterator]() {
+        return {
+          async next(): Promise<IteratorResult<string>> {
+            if (lineQueue.length > 0) {
+              return { value: lineQueue.shift() as string, done: false };
+            }
+            if (streamEnded) {
+              return { value: undefined, done: true };
+            }
+            const next = await new Promise<string | null>((r) => {
+              pendingResolve = r;
+            });
+            if (next === null) return { value: undefined, done: true };
+            return { value: next, done: false };
+          },
+        };
+      },
+    };
 
     const done: Promise<AgentRunResult> = new Promise((resolveResult) => {
-      const lastOutLines: string[] = [];
-      const tap = createInterface({ input: proc.stdout, crlfDelay: Infinity });
-      tap.on("line", (line) => {
-        lastOutLines.push(line);
-        if (lastOutLines.length > 200) lastOutLines.shift();
-      });
-
       proc.on("error", () => {
         resolveResult({ kind: "crashed", stderrTail: stderrChunks.join("") });
       });
@@ -86,6 +115,6 @@ export class ClaudeCodeBackend implements AgentBackend {
       });
     });
 
-    return { done, stdoutLines: linesIter };
+    return { done, stdoutLines };
   }
 }
