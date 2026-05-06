@@ -25,10 +25,11 @@ export function loadPatterns(): PatternLibrary {
       }
       byIdMap.set(p.id, p);
     }
-    cached = Object.freeze({
+    const lib: PatternLibrary = {
       entries: allPatterns,
-      byId: (id: string) => byIdMap.get(id),
-    });
+      byId: (id) => byIdMap.get(id),
+    };
+    cached = Object.freeze(lib);
   }
   return cached;
 }
