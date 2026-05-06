@@ -27,6 +27,7 @@
     "@architext/catalog": "workspace:*"
   },
   "devDependencies": {
+    "@architext/patterns": "workspace:*",
     "tsup": "^8.0.2",
     "vitest": "^1.6.0",
     "typescript": "^5.4.5"
