@@ -6,11 +6,12 @@
  * Consumed by: [[main]] (root render)
  */
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import { TopBar } from "./topbar/TopBar";
 import { ExportModal } from "./topbar/ExportModal";
 import { ApplyModal } from "./topbar/ApplyModal";
+import { ShortcutOverlay } from "./topbar/ShortcutOverlay";
 import { PaletteRail } from "./palette/PaletteRail";
 import { PalettePanel } from "./palette/PalettePanel";
 import { Canvas } from "./canvas/Canvas";
@@ -24,6 +25,7 @@ import { startAutoSave } from "./persistence/auto-save";
 
 export function App() {
   const historyRef = useRef<SpecHistory | null>(null);
+  const [shortcutOverlayOpen, setShortcutOverlayOpen] = useState(false);
 
   const paletteOpen = useUIStore((s) => s.paletteOpen);
   const exportModalOpen = useUIStore((s) => s.exportModalOpen);
@@ -150,6 +152,20 @@ export function App() {
         return;
       }
 
+      // ? — show keyboard shortcut help (not in input fields)
+      if (e.key === "?") {
+        const target = e.target as HTMLElement;
+        if (
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+        setShortcutOverlayOpen(true);
+        return;
+      }
+
       // Escape: close palette, deselect
       if (e.key === "Escape") {
         closePalette();
@@ -185,6 +201,10 @@ export function App() {
       <ApplyModal
         open={applyModalOpen}
         onClose={() => setApplyModalOpen(false)}
+      />
+      <ShortcutOverlay
+        open={shortcutOverlayOpen}
+        onClose={() => setShortcutOverlayOpen(false)}
       />
     </div>
   );
