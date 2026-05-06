@@ -2,7 +2,7 @@
  * @module @architext/web/canvas/Canvas
  * Concepts: [[ReactFlowWrapper]], [[CanvasComponent]], [[StoreWiring]]
  * Spec: §4.1 Layout (React Flow canvas with groups and services); §4.7 Selection and keyboard shortcuts
- * Depends on: [[spec-store]], [[ui-store]], [[node-types]], [[to-react-flow]], [[from-react-flow]]
+ * Depends on: [[spec-store]], [[ui-store]], [[node-types]], [[edge-types]], [[EdgeCreation]], [[to-react-flow]], [[from-react-flow]]
  * Consumed by: [[App]] (main canvas area)
  */
 
@@ -26,6 +26,8 @@ import "@xyflow/react/dist/style.css";
 import { useSpecStore } from "../store/spec-store";
 import { useUIStore } from "../store/ui-store";
 import { nodeTypes } from "./nodes/node-types";
+import { edgeTypes } from "./edges/edge-types";
+import { useEdgeCreation, EdgeCreationModal } from "./EdgeCreation";
 
 /**
  * Main canvas component wrapping React Flow.
@@ -39,6 +41,16 @@ export function Canvas() {
   const applyDimensionChanges = useSpecStore((s) => s.applyDimensionChanges);
   const applyNodeRemovals = useSpecStore((s) => s.applyNodeRemovals);
   const applyEdgeRemovals = useSpecStore((s) => s.applyEdgeRemovals);
+
+  // ─── Edge creation ──────────────────────────────────────
+  const {
+    pendingConnection,
+    error: edgeError,
+    onConnect,
+    onCancel: onEdgeCancel,
+    onSelectProtocol,
+    isDuplicate,
+  } = useEdgeCreation();
 
   const selectedIds = useUIStore((s) => s.selectedIds);
   const select = useUIStore((s) => s.select);
@@ -138,13 +150,15 @@ export function Canvas() {
   // ─── Render ──────────────────────────────────────────────
   return (
     <ReactFlowProvider>
-      <div className="h-full w-full">
+      <div className="relative h-full w-full">
         <ReactFlow
           nodes={nodesWithSelection}
           edges={edgesWithSelection}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
+          onConnect={onConnect}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
           fitView
@@ -155,6 +169,13 @@ export function Canvas() {
           <Controls />
           <MiniMap />
         </ReactFlow>
+        <EdgeCreationModal
+          pendingConnection={pendingConnection}
+          error={edgeError}
+          onCancel={onEdgeCancel}
+          onSelectProtocol={onSelectProtocol}
+          isDuplicate={isDuplicate}
+        />
       </div>
     </ReactFlowProvider>
   );

@@ -1,0 +1,239 @@
+/**
+ * @module @architext/web/canvas/EdgeCreation
+ * Concepts: [[EdgeCreation]], [[ProtocolModal]], [[ConnectionFlow]]
+ * Spec: §4.5 Edge creation — protocol selection modal on connect; self-loop and duplicate rejection
+ * Depends on: [[spec-store]] (addEdge, spec edges), [[@architext/schema]] (Protocol, Edge)
+ * Consumed by: [[Canvas]] (onConnect handler + modal rendering)
+ */
+
+import { useCallback, useEffect, useState } from "react";
+import type { Connection } from "@xyflow/react";
+import type { Protocol, Edge } from "@architext/schema";
+import { useSpecStore } from "../store/spec-store";
+
+// ─── Protocol catalog ──────────────────────────────────────────────────
+
+interface ProtocolOption {
+  value: Protocol;
+  label: string;
+  description: string;
+  color: string;
+}
+
+const PROTOCOLS: readonly ProtocolOption[] = [
+  { value: "http",      label: "HTTP",      description: "REST / HTTP API",        color: "border-blue-300 hover:bg-blue-50" },
+  { value: "graphql",   label: "GraphQL",   description: "GraphQL endpoint",       color: "border-pink-300 hover:bg-pink-50" },
+  { value: "grpc",      label: "gRPC",      description: "Protocol Buffers RPC",   color: "border-orange-300 hover:bg-orange-50" },
+  { value: "websocket", label: "WebSocket", description: "Bidirectional socket",    color: "border-green-300 hover:bg-green-50" },
+  { value: "queue",     label: "Queue",     description: "Message queue / pub-sub", color: "border-yellow-300 hover:bg-yellow-50" },
+  { value: "sql",       label: "SQL",       description: "SQL database wire",      color: "border-indigo-300 hover:bg-indigo-50" },
+  { value: "key-value", label: "Key-Value", description: "KV store protocol",      color: "border-teal-300 hover:bg-teal-50" },
+  { value: "fs",        label: "FS",        description: "Filesystem / volume",    color: "border-gray-300 hover:bg-gray-50" },
+] as const;
+
+// ─── Pending connection state ──────────────────────────────────────────
+
+interface PendingConnection {
+  source: string;
+  target: string;
+}
+
+/** Generate a short unique id for the edge */
+function generateEdgeId(source: string, target: string, protocol: Protocol): string {
+  return `${source}-${protocol}-${target}`;
+}
+
+// ─── Hook: useEdgeCreation ─────────────────────────────────────────────
+
+export interface EdgeCreationState {
+  /** The pending connection awaiting protocol selection, or null */
+  pendingConnection: PendingConnection | null;
+  /** Self-loop error message, auto-dismisses */
+  error: string | null;
+  /** Callback to pass to ReactFlow's onConnect */
+  onConnect: (connection: Connection) => void;
+  /** Cancel the modal */
+  onCancel: () => void;
+  /** Select a protocol to finalize the edge */
+  onSelectProtocol: (protocol: Protocol) => void;
+  /** Check if a protocol is already used between the pending source/target */
+  isDuplicate: (protocol: Protocol) => boolean;
+}
+
+export function useEdgeCreation(): EdgeCreationState {
+  const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const specAddEdge = useSpecStore((s) => s.addEdge);
+  const edges = useSpecStore((s) => s.spec.edges);
+
+  // Auto-dismiss error after 2 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(null), 2000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      const { source, target } = connection;
+
+      // Self-loop rejection
+      if (source === target) {
+        setError("Cannot create a self-loop: source and target must be different services.");
+        return;
+      }
+
+      setPendingConnection({ source, target });
+    },
+    [],
+  );
+
+  const onCancel = useCallback(() => {
+    setPendingConnection(null);
+  }, []);
+
+  const isDuplicate = useCallback(
+    (protocol: Protocol): boolean => {
+      if (!pendingConnection) return false;
+      return edges.some(
+        (e) =>
+          e.from === pendingConnection.source &&
+          e.to === pendingConnection.target &&
+          e.protocol === protocol,
+      );
+    },
+    [pendingConnection, edges],
+  );
+
+  const onSelectProtocol = useCallback(
+    (protocol: Protocol) => {
+      if (!pendingConnection) return;
+
+      const edgeId = generateEdgeId(pendingConnection.source, pendingConnection.target, protocol);
+
+      // Build the edge with required fields. Protocol-specific optional
+      // fields (port, topicName, etc.) get their defaults.
+      let edge: Edge;
+
+      switch (protocol) {
+        case "queue":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            topicName: "default",
+          };
+          break;
+        default:
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+          } as Edge;
+          break;
+      }
+
+      try {
+        specAddEdge(edge);
+      } catch {
+        // Duplicate or self-loop caught by spec-mutations — ignore silently
+      }
+
+      setPendingConnection(null);
+    },
+    [pendingConnection, specAddEdge],
+  );
+
+  return {
+    pendingConnection,
+    error,
+    onConnect,
+    onCancel,
+    onSelectProtocol,
+    isDuplicate,
+  };
+}
+
+// ─── Modal component ───────────────────────────────────────────────────
+
+export interface EdgeCreationModalProps {
+  pendingConnection: PendingConnection | null;
+  error: string | null;
+  onCancel: () => void;
+  onSelectProtocol: (protocol: Protocol) => void;
+  isDuplicate: (protocol: Protocol) => boolean;
+}
+
+export function EdgeCreationModal({
+  pendingConnection,
+  error,
+  onCancel,
+  onSelectProtocol,
+  isDuplicate,
+}: EdgeCreationModalProps) {
+  // Close on Escape
+  useEffect(() => {
+    if (!pendingConnection) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [pendingConnection, onCancel]);
+
+  // Error toast
+  if (error) {
+    return (
+      <div className="fixed inset-x-0 top-4 z-50 flex justify-center">
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700 shadow-lg">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!pendingConnection) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onCancel}
+    >
+      <div
+        className="w-96 rounded-xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          What kind of connection?
+        </h2>
+        <div className="grid grid-cols-2 gap-2">
+          {PROTOCOLS.map((p) => {
+            const duplicate = isDuplicate(p.value);
+            return (
+              <button
+                key={p.value}
+                disabled={duplicate}
+                onClick={() => onSelectProtocol(p.value)}
+                className={`flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors ${
+                  duplicate
+                    ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-50"
+                    : `${p.color} cursor-pointer`
+                }`}
+              >
+                <span className="text-sm font-medium text-gray-800">{p.label}</span>
+                <span className="text-xs text-gray-500">{p.description}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
