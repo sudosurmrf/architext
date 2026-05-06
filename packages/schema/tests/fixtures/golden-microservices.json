@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "0.1.0",
+  "project": { "name": "Pipeline", "slug": "pipeline" },
+  "groups": [
+    {
+      "id": "g-svc",
+      "name": "Services",
+      "kind": "backend",
+      "serviceIds": ["ingest", "processor"],
+      "position": { "x": 100, "y": 100 },
+      "size": { "width": 600, "height": 200 }
+    }
+  ],
+  "services": [
+    {
+      "id": "ingest",
+      "name": "ingest",
+      "kind": "backend-service",
+      "groupId": "g-svc",
+      "position": { "x": 150, "y": 150 },
+      "components": [
+        { "id": "node", "category": "runtime" },
+        { "id": "express", "category": "framework" }
+      ]
+    },
+    {
+      "id": "processor",
+      "name": "processor",
+      "kind": "worker",
+      "groupId": "g-svc",
+      "position": { "x": 450, "y": 150 },
+      "components": [
+        { "id": "python", "category": "language" }
+      ]
+    },
+    {
+      "id": "broker",
+      "name": "broker",
+      "kind": "queue",
+      "position": { "x": 300, "y": 350 },
+      "components": [{ "id": "rabbitmq", "category": "datastore" }]
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "ingest", "to": "broker", "protocol": "queue", "topicName": "events.in" },
+    { "id": "e2", "from": "broker", "to": "processor", "protocol": "queue", "topicName": "events.in" }
+  ]
+}

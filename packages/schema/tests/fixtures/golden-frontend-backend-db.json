@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "0.1.0",
+  "project": { "name": "Notes App", "slug": "notes-app" },
+  "groups": [
+    {
+      "id": "g-be",
+      "name": "Backend",
+      "kind": "backend",
+      "serviceIds": ["api", "db"],
+      "position": { "x": 400, "y": 100 },
+      "size": { "width": 500, "height": 300 },
+      "network": "private"
+    }
+  ],
+  "services": [
+    {
+      "id": "web",
+      "name": "web",
+      "kind": "frontend-app",
+      "position": { "x": 50, "y": 100 },
+      "components": [
+        { "id": "typescript", "category": "language" },
+        { "id": "react", "category": "library", "version": "^18.3.0" },
+        { "id": "vite", "category": "build-tool" }
+      ]
+    },
+    {
+      "id": "api",
+      "name": "api",
+      "kind": "backend-service",
+      "groupId": "g-be",
+      "position": { "x": 450, "y": 150 },
+      "components": [
+        { "id": "python", "category": "language" },
+        { "id": "fastapi", "category": "framework" }
+      ]
+    },
+    {
+      "id": "db",
+      "name": "db",
+      "kind": "database",
+      "groupId": "g-be",
+      "position": { "x": 700, "y": 250 },
+      "components": [{ "id": "postgres", "category": "datastore" }]
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "web", "to": "api", "protocol": "http", "port": 8000, "basePath": "/api" },
+    { "id": "e2", "from": "api", "to": "db", "protocol": "sql", "database": "notes", "port": 5432 }
+  ]
+}
