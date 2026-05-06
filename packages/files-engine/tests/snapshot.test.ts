@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { computeFileTree } from "../src/compute";
@@ -33,8 +33,7 @@ describe("Files-engine snapshots vs schema golden fixtures", () => {
       const actual = { paths: tree.paths, byService: tree.byService };
 
       if (REGENERATE) {
-        const fs = require("node:fs");
-        fs.writeFileSync(
+        writeFileSync(
           resolve(here, c.snapshotPath),
           JSON.stringify(actual, null, 2) + "\n"
         );

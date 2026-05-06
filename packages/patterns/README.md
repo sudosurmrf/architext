@@ -7,9 +7,10 @@ A pattern is a pre-wired sub-spec dropped as a single unit (e.g., "REST API + DB
 ## Usage
 
 ```typescript
+import { randomUUID } from "node:crypto";
 import { loadPatterns, instantiatePattern } from "@architext/patterns";
 
 const all = loadPatterns();
-const restApi = all.byId("rest-api-with-db");
-const fragment = instantiatePattern(restApi, { x: 100, y: 100 });
+const restApi = all.byId("rest-api-with-db")!;
+const fragment = instantiatePattern(restApi, { x: 100, y: 100 }, () => randomUUID());
 ```
