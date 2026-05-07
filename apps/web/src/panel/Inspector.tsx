@@ -76,6 +76,168 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function optionalText(value: string): string | undefined {
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+function optionalPort(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (trimmed === "") return undefined;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function withOptionalField<T extends Edge>(edge: T, key: string, value: string | number | undefined): T {
+  const next = { ...edge } as Record<string, unknown>;
+  if (value === undefined || value === "") {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+  return next as T;
+}
+
+function EdgeConfigFields({ edge, onChange }: { edge: Edge; onChange: (edge: Edge) => void }) {
+  switch (edge.protocol) {
+    case "http":
+      return (
+        <>
+          <Field label="Port">
+            <input
+              className={inputClass}
+              type="number"
+              min={1}
+              value={edge.port ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "port", optionalPort(e.target.value)))}
+            />
+          </Field>
+          <Field label="Base path">
+            <input
+              className={inputClass}
+              value={edge.basePath ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "basePath", optionalText(e.target.value)))}
+            />
+          </Field>
+        </>
+      );
+    case "graphql":
+      return (
+        <>
+          <Field label="Port">
+            <input
+              className={inputClass}
+              type="number"
+              min={1}
+              value={edge.port ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "port", optionalPort(e.target.value)))}
+            />
+          </Field>
+          <Field label="Path">
+            <input
+              className={inputClass}
+              value={edge.path ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "path", optionalText(e.target.value)))}
+            />
+          </Field>
+        </>
+      );
+    case "grpc":
+      return (
+        <Field label="Port">
+          <input
+            className={inputClass}
+            type="number"
+            min={1}
+            value={edge.port ?? ""}
+            onChange={(e) => onChange(withOptionalField(edge, "port", optionalPort(e.target.value)))}
+          />
+        </Field>
+      );
+    case "websocket":
+      return (
+        <>
+          <Field label="Port">
+            <input
+              className={inputClass}
+              type="number"
+              min={1}
+              value={edge.port ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "port", optionalPort(e.target.value)))}
+            />
+          </Field>
+          <Field label="Path">
+            <input
+              className={inputClass}
+              value={edge.path ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "path", optionalText(e.target.value)))}
+            />
+          </Field>
+        </>
+      );
+    case "queue":
+      return (
+        <>
+          <Field label="Topic">
+            <input
+              className={inputClass}
+              value={edge.topicName}
+              onChange={(e) => onChange({ ...edge, topicName: optionalText(e.target.value) ?? "default" })}
+            />
+          </Field>
+          <Field label="Broker">
+            <input
+              className={inputClass}
+              value={edge.broker ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "broker", optionalText(e.target.value)))}
+            />
+          </Field>
+        </>
+      );
+    case "sql":
+      return (
+        <>
+          <Field label="Database">
+            <input
+              className={inputClass}
+              value={edge.database ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "database", optionalText(e.target.value)))}
+            />
+          </Field>
+          <Field label="Port">
+            <input
+              className={inputClass}
+              type="number"
+              min={1}
+              value={edge.port ?? ""}
+              onChange={(e) => onChange(withOptionalField(edge, "port", optionalPort(e.target.value)))}
+            />
+          </Field>
+        </>
+      );
+    case "key-value":
+      return (
+        <Field label="Namespace">
+          <input
+            className={inputClass}
+            value={edge.namespace ?? ""}
+            onChange={(e) => onChange(withOptionalField(edge, "namespace", optionalText(e.target.value)))}
+          />
+        </Field>
+      );
+    case "fs":
+      return (
+        <Field label="Mount path">
+          <input
+            className={inputClass}
+            value={edge.mountPath ?? ""}
+            onChange={(e) => onChange(withOptionalField(edge, "mountPath", optionalText(e.target.value)))}
+          />
+        </Field>
+      );
+  }
+}
+
 function GroupInspector({ group }: { group: Group }) {
   const spec = useSpecStore((s) => s.spec);
   const setSpec = useSpecStore((s) => s.setSpec);
@@ -218,6 +380,7 @@ function ServiceInspector({ service }: { service: Service }) {
 
 function EdgeInspector({ edge }: { edge: Edge }) {
   const removeEdge = useSpecStore((s) => s.removeEdge);
+  const updateEdge = useSpecStore((s) => s.updateEdge);
   const clearSelection = useUIStore((s) => s.clearSelection);
   const spec = useSpecStore((s) => s.spec);
 
@@ -228,11 +391,6 @@ function EdgeInspector({ edge }: { edge: Edge }) {
     removeEdge(edge.id);
     clearSelection();
   };
-
-  // Extract protocol-specific fields (excluding id, from, to, protocol)
-  const extraFields = Object.entries(edge).filter(
-    ([key]) => !["id", "from", "to", "protocol"].includes(key)
-  );
 
   return (
     <div className="space-y-2">
@@ -251,13 +409,7 @@ function EdgeInspector({ edge }: { edge: Edge }) {
           {toService?.name ?? edge.to}
         </div>
       </Field>
-      {extraFields.map(([key, value]) => (
-        <Field key={key} label={key}>
-          <div className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
-            {String(value ?? "")}
-          </div>
-        </Field>
-      ))}
+      <EdgeConfigFields edge={edge} onChange={(nextEdge) => updateEdge(edge.id, nextEdge)} />
       <button
         onClick={handleDelete}
         className="mt-3 flex w-full items-center justify-center gap-1.5 rounded border border-red-200 py-1.5 text-sm text-red-600 hover:bg-red-50"

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildPrompt } from "../src/prompt/build";
+import { buildScaffoldContract } from "../src/contract";
 import type { ArchitextSpec } from "@architext/schema";
 
 const minimalSpec: ArchitextSpec = {
@@ -34,5 +35,25 @@ describe("buildPrompt", () => {
   it("emits the spec inside a fenced JSON code block", () => {
     const out = buildPrompt("META", minimalSpec);
     expect(out).toMatch(/```json\n[\s\S]+\n```/);
+  });
+
+  it("includes an expected file contract when provided", () => {
+    const spec: ArchitextSpec = {
+      ...minimalSpec,
+      services: [
+        {
+          id: "api",
+          name: "api",
+          kind: "backend-service",
+          components: [{ id: "fastapi", category: "framework" }],
+        },
+      ],
+    };
+    const out = buildPrompt("META", spec, undefined, buildScaffoldContract(spec));
+
+    expect(out).toContain("Expected File Contract");
+    expect(out).toContain("Expected file count:");
+    expect(out).toContain("- api/main.py");
+    expect(out).toContain("- api/requirements.txt");
   });
 });

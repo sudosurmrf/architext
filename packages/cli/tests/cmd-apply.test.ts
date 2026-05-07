@@ -39,7 +39,10 @@ describe("runApply", () => {
     expect(code).toBe(ExitCode.Success);
     const joined = out.join("\n");
     expect(joined).toContain("# Architext Scaffold Prompt v0.1.0");
+    expect(joined).toContain("Expected File Contract");
+    expect(joined).toContain("- README.md");
     expect(joined).toContain('"slug": "smoke"');
+    expect(existsSync(resolve(dir, "smoke"))).toBe(false);
   });
 
   it("returns SpecInvalid for an invalid spec", async () => {
@@ -85,7 +88,7 @@ describe("runApply", () => {
     expect(out.join("\n")).toMatch(/already exists/i);
   });
 
-  it("succeeds end-to-end with mock backend, writing files to <cwd>/<slug>/", async () => {
+  it("reports missing expected files when mock backend writes only a subset", async () => {
     const dir = tmp();
     const specPath = writeSpec(dir);
     const out: string[] = [];
@@ -96,7 +99,32 @@ describe("runApply", () => {
         outcome: "done",
         filesToWrite: [
           { path: "README.md", content: "# Smoke" },
+        ],
+      }),
+      write: (s) => out.push(s),
+    });
+    expect(code).toBe(ExitCode.ScaffoldContractFailed);
+    expect(out.join("\n")).toContain("Scaffold contract: FAIL");
+    expect(out.join("\n")).toContain(".gitignore");
+    expect(out.join("\n")).toContain("architext-spec.json");
+  });
+
+  it("succeeds end-to-end when mock backend writes every expected file", async () => {
+    const dir = tmp();
+    const specPath = writeSpec(dir);
+    const out: string[] = [];
+    const code = await runApply({
+      specPath,
+      cwd: dir,
+      backend: new MockAgentBackend({
+        outcome: "done",
+        filesToWrite: [
+          { path: ".gitignore", content: "node_modules/\n" },
+          { path: "README.md", content: "# Smoke\n\nnpm run dev\n" },
+          { path: "architext-spec.json", content: JSON.stringify(validSpec) },
           { path: "package.json", content: "{}" },
+          { path: "tmpnodejsnpm-cache/_logs/debug.log", content: "cache noise" },
+          { path: "node_modules/example/index.js", content: "cache noise" },
         ],
       }),
       write: (s) => out.push(s),
@@ -104,7 +132,11 @@ describe("runApply", () => {
     expect(code).toBe(ExitCode.Success);
     const target = resolve(dir, "smoke");
     expect(existsSync(target)).toBe(true);
-    expect(readFileSync(resolve(target, "README.md"), "utf-8")).toBe("# Smoke");
+    expect(readFileSync(resolve(target, "README.md"), "utf-8")).toContain("# Smoke");
+    expect(out.join("\n")).toContain("Scaffold contract: PASS");
+    expect(out.join("\n")).toContain("npm run dev");
+    expect(out.join("\n")).toContain("Extra files created: 1");
+    expect(out.join("\n")).toContain("package.json");
   });
 
   it("returns AgentFailedSentinel when backend resolves with kind=failed", async () => {

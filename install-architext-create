@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target="$HOME/.local/bin/architext-create"
+
+mkdir -p "$HOME/.local/bin"
+cat > "$target" <<EOF
+#!/usr/bin/env bash
+node "$repo_root/packages/cli/dist/create-bin.js" "\$@"
+EOF
+chmod +x "$target"
+
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *)
+    profile="$HOME/.bashrc"
+    touch "$profile"
+    if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$profile"; then
+      printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$profile"
+    fi
+    ;;
+esac
+
+echo "Installed architext-create -> $target"
+echo "If this shell cannot see it yet, run:"
+echo '  export PATH="$HOME/.local/bin:$PATH"'

@@ -8,6 +8,8 @@
 
 import { spawn as childSpawn } from "node:child_process";
 import { createInterface } from "node:readline";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import type { AgentBackend, AgentRun, AgentRunResult } from "./backend";
 
 export class ClaudeCodeBackend implements AgentBackend {
@@ -22,8 +24,15 @@ export class ClaudeCodeBackend implements AgentBackend {
   }
 
   spawn(prompt: string, opts: { cwd: string }): AgentRun {
-    const proc = childSpawn("claude", ["--print"], {
+    const npmCacheDir = join(tmpdir(), "architext-npm-cache");
+    const proc = childSpawn("claude", ["--print", "--permission-mode", "acceptEdits"], {
       cwd: opts.cwd,
+      env: {
+        ...process.env,
+        npm_config_cache: npmCacheDir,
+        NPM_CONFIG_CACHE: npmCacheDir,
+        npm_config_update_notifier: "false",
+      },
       stdio: ["pipe", "pipe", "pipe"],
     });
 

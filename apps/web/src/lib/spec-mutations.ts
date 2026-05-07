@@ -147,6 +147,30 @@ export function addEdge(spec: ArchitextSpec, edge: Edge): ArchitextSpec {
   return { ...spec, edges: [...spec.edges, edge] };
 }
 
+export function updateEdge(spec: ArchitextSpec, edgeId: string, nextEdge: Edge): ArchitextSpec {
+  const idx = spec.edges.findIndex((e) => e.id === edgeId);
+  if (idx === -1) throw new Error(`Edge not found: ${edgeId}`);
+
+  if (nextEdge.from === nextEdge.to) {
+    throw new Error("self-loop: edge from and to must differ");
+  }
+
+  const isDuplicate = spec.edges.some(
+    (e) =>
+      e.id !== edgeId &&
+      e.from === nextEdge.from &&
+      e.to === nextEdge.to &&
+      e.protocol === nextEdge.protocol,
+  );
+  if (isDuplicate) {
+    throw new Error("duplicate: edge with same from/to/protocol already exists");
+  }
+
+  const edges = [...spec.edges];
+  edges[idx] = nextEdge;
+  return { ...spec, edges };
+}
+
 // ─── Reparent ──────────────────────────────────────────────────────────
 
 export function reparentService(

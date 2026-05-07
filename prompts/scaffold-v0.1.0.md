@@ -18,6 +18,14 @@ local dev command (e.g., `npm run dev`, `uvicorn main:app --reload`).
 - Generate code that compiles / imports cleanly on first try. If a service has
   a TypeScript component, emit `tsconfig.json`. If a service has Python,
   emit `pyproject.toml` or `requirements.txt`. Etc.
+- Do not run package managers, install commands, `npx`, Playwright, tests, or
+  browser automation during scaffolding. Write manifests and source files only;
+  the user will install and run checks after generation.
+- Treat the Expected File Contract as the work order. It was compiled
+  deterministically from the spec to reduce architecture discovery time.
+- Do not inspect the surrounding repository unless the user's additional
+  instructions explicitly ask you to. You are running in a fresh target
+  directory and should write the scaffold directly.
 
 ## Spec Concepts
 
@@ -142,10 +150,13 @@ Always produce:
 
 ## Output Protocol
 
-1. First, output a single JSON plan on its own line (no surrounding prose):
+1. First, read the spec and Expected File Contract, then output a single
+   concise JSON plan on its own line (no surrounding prose):
    `{ "services": [{ "name": "<service.name>", "files": ["<rel/path>", ...] }] }`
-2. Then, write each file using your file-writing tools. Path strings must
-   match what you announced in step 1 — don't add or skip files silently.
+   The `files` arrays must include every service-specific expected path.
+2. Then, write each expected file using your file-writing tools. Path strings
+   must match what you announced in step 1. You may add useful supporting
+   files, but do not omit any expected file.
 3. Finish with the literal token, on its own line:
    `ARCHITEXT_DONE`
 4. If you cannot complete the scaffold, finish with the token, on its own line:

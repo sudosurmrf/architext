@@ -3,7 +3,7 @@ import { copyFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/bin.ts"],
+  entry: ["src/index.ts", "src/bin.ts", "src/create-bin.ts"],
   format: ["esm", "cjs"],
   dts: true,
   sourcemap: true,

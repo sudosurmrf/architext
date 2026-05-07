@@ -12,15 +12,15 @@ import { dirname, resolve } from "node:path";
 import { ApplyError, ExitCode } from "../errors";
 
 // Search order:
-//   1. <package>/prompts/scaffold-v<version>.md   (after tsup `onSuccess` copies)
-//   2. <repo-root>/prompts/scaffold-v<version>.md (dev mode, before build)
+//   1. <repo-root>/prompts/scaffold-v<version>.md (monorepo dev source)
+//   2. <package>/prompts/scaffold-v<version>.md   (after tsup `onSuccess` copies)
 function candidatePaths(version: string): string[] {
   const here = dirname(fileURLToPath(import.meta.url));
   const filename = `scaffold-v${version}.md`;
   return [
+    resolve(here, "..", "..", "..", "..", "prompts", filename), // monorepo: packages/cli/src/prompt -> /repo/prompts
     resolve(here, "..", "..", "prompts", filename),     // dist/prompt/load.js → dist/../prompts
     resolve(here, "..", "prompts", filename),           // src/prompt/load.ts → src/../prompts (after onSuccess)
-    resolve(here, "..", "..", "..", "..", "prompts", filename), // monorepo: packages/cli/src/prompt → /repo/prompts
   ];
 }
 

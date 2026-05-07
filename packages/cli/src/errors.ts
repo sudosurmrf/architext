@@ -16,6 +16,7 @@ export enum ExitCode {
   TargetExists = 4,
   AgentCrashed = 5,
   AgentFailedSentinel = 6,
+  ScaffoldContractFailed = 7,
 }
 
 export class ApplyError extends Error {

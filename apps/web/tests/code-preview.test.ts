@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildServicePrompt,
+  buildServiceAgentBrief,
   estimateTokens,
   cacheKey,
 } from "../src/lib/code-preview";
@@ -72,6 +73,37 @@ describe("buildServicePrompt", () => {
     expect(prompt).toContain("via http");
     expect(prompt).toContain("via sql");
   });
+
+  it("includes edge config details that affect scaffold wiring", () => {
+    const service = makeService();
+    const edge = makeEdge({
+      id: "edge-http",
+      from: "svc-web",
+      to: "svc-api",
+      protocol: "http",
+      port: 8080,
+      basePath: "/v1",
+    });
+    const spec = makeSpec({ services: [service], edges: [edge] });
+    const prompt = buildServicePrompt(service, [edge], spec);
+
+    expect(prompt).toContain("basePath=/v1");
+    expect(prompt).toContain("port=8080");
+  });
+});
+
+describe("buildServiceAgentBrief", () => {
+  it("shows the compiled service context without preview instructions", () => {
+    const service = makeService();
+    const edge = makeEdge({ id: "edge-http", from: "svc-web", to: "svc-api" });
+    const spec = makeSpec({ services: [service], edges: [edge] });
+    const brief = buildServiceAgentBrief(service, [edge], spec);
+
+    expect(brief).toContain("Agent brief");
+    expect(brief).toContain("API Service");
+    expect(brief).toContain("via http");
+    expect(brief).not.toContain("Generate only idiomatic boilerplate");
+  });
 });
 
 describe("estimateTokens", () => {
@@ -115,6 +147,13 @@ describe("cacheKey", () => {
       makeEdge(),
       makeEdge({ id: "edge-grpc", from: "svc-api", to: "svc-worker", protocol: "grpc" } as Edge),
     ];
+    expect(cacheKey(service, edges1)).not.toBe(cacheKey(service, edges2));
+  });
+
+  it("changes when edge configuration changes", () => {
+    const service = makeService();
+    const edges1 = [makeEdge({ port: 3000 } as Edge)];
+    const edges2 = [makeEdge({ port: 8080 } as Edge)];
     expect(cacheKey(service, edges1)).not.toBe(cacheKey(service, edges2));
   });
 });

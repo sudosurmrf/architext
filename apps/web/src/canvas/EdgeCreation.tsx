@@ -112,11 +112,50 @@ export function useEdgeCreation(): EdgeCreationState {
 
       const edgeId = generateEdgeId(pendingConnection.source, pendingConnection.target, protocol);
 
-      // Build the edge with required fields. Protocol-specific optional
-      // fields (port, topicName, etc.) get their defaults.
+      // Build the edge with useful defaults so the generated scaffold needs
+      // less interpretation later.
       let edge: Edge;
 
       switch (protocol) {
+        case "http":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            port: 3000,
+            basePath: "/api",
+          };
+          break;
+        case "graphql":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            port: 4000,
+            path: "/graphql",
+          };
+          break;
+        case "grpc":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            port: 50051,
+          };
+          break;
+        case "websocket":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            port: 3001,
+            path: "/ws",
+          };
+          break;
         case "queue":
           edge = {
             id: edgeId,
@@ -126,14 +165,37 @@ export function useEdgeCreation(): EdgeCreationState {
             topicName: "default",
           };
           break;
-        default:
+        case "sql":
           edge = {
             id: edgeId,
             from: pendingConnection.source,
             to: pendingConnection.target,
             protocol,
-          } as Edge;
+            database: "app",
+            port: 5432,
+          };
           break;
+        case "key-value":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            namespace: "app",
+          };
+          break;
+        case "fs":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            mountPath: "./data",
+          };
+          break;
+        default:
+          protocol satisfies never;
+          return;
       }
 
       try {

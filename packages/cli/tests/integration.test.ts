@@ -85,8 +85,9 @@ describe("runCli (end-to-end)", () => {
         "mock",
       ]);
       expect(code).toBe(0);
-      // The mock with default outcome writes 0 files but creates the target dir.
+      // The mock reads the expected file contract from the prompt and writes it.
       expect(existsSync(resolve(dir, "integ"))).toBe(true);
+      expect(existsSync(resolve(dir, "integ", "README.md"))).toBe(true);
     } finally {
       process.chdir(oldCwd);
     }

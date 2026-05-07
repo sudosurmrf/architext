@@ -5,6 +5,7 @@ import {
   addComponent,
   removeNode,
   addEdge,
+  updateEdge,
   removeEdge,
   moveNode,
   resizeGroup,
@@ -192,6 +193,48 @@ describe("removeEdge", () => {
     });
     const result = removeEdge(spec, "e1");
     expect(result.edges).toHaveLength(0);
+  });
+});
+
+describe("updateEdge", () => {
+  it("updates protocol details without mutating the original spec", () => {
+    const edge: Edge = {
+      id: "e1",
+      from: "web",
+      to: "api",
+      protocol: "http",
+      port: 3000,
+      basePath: "/api",
+    };
+    const spec = makeSpec({
+      services: [
+        { id: "web", name: "web", kind: "frontend-app", position: pos, components: [] },
+        { id: "api", name: "api", kind: "backend-service", position: pos, components: [] },
+      ],
+      edges: [edge],
+    });
+
+    const result = updateEdge(spec, "e1", { ...edge, port: 8080, basePath: "/v1" });
+
+    expect(result.edges[0]).toMatchObject({ port: 8080, basePath: "/v1" });
+    expect(spec.edges[0]).toMatchObject({ port: 3000, basePath: "/api" });
+  });
+
+  it("rejects duplicate edge updates", () => {
+    const spec = makeSpec({
+      services: [
+        { id: "web", name: "web", kind: "frontend-app", position: pos, components: [] },
+        { id: "api", name: "api", kind: "backend-service", position: pos, components: [] },
+      ],
+      edges: [
+        { id: "e1", from: "web", to: "api", protocol: "http" as const },
+        { id: "e2", from: "api", to: "web", protocol: "http" as const },
+      ],
+    });
+
+    expect(() =>
+      updateEdge(spec, "e2", { id: "e2", from: "web", to: "api", protocol: "http" }),
+    ).toThrow("duplicate");
   });
 });
 

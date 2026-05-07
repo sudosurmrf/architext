@@ -20,6 +20,7 @@ import {
   addComponent,
   removeNode,
   addEdge,
+  updateEdge as updateEdgeMutation,
   removeEdge,
   moveNode,
   resizeGroup,
@@ -64,6 +65,7 @@ export interface SpecState {
   addComponent: (serviceId: string, component: Component) => void;
   removeNode: (nodeId: string) => void;
   addEdge: (edge: Edge) => void;
+  updateEdge: (edgeId: string, edge: Edge) => void;
   removeEdge: (edgeId: string) => void;
   moveNode: (nodeId: string, position: Position) => void;
   resizeGroup: (groupId: string, size: Size) => void;
@@ -93,15 +95,19 @@ export const useSpecStore = create<SpecState>((set) => {
 
     setSpec: (spec) => set({ spec, rfGraph: specToReactFlow(spec) }),
     updateProject: (name, slug, description) =>
-      update((s) => ({
-        ...s,
-        project: { ...s.project, name, slug, ...(description !== undefined ? { description } : {}) },
-      })),
+      update((s) => {
+        const project = { ...s.project, name, slug };
+        if (description !== undefined) {
+          project.description = description;
+        }
+        return { ...s, project };
+      }),
     addGroup: (params) => update((s) => addGroup(s, params)),
     addService: (params) => update((s) => addService(s, params)),
     addComponent: (serviceId, component) => update((s) => addComponent(s, serviceId, component)),
     removeNode: (nodeId) => update((s) => removeNode(s, nodeId)),
     addEdge: (edge) => update((s) => addEdge(s, edge)),
+    updateEdge: (edgeId, edge) => update((s) => updateEdgeMutation(s, edgeId, edge)),
     removeEdge: (edgeId) => update((s) => removeEdge(s, edgeId)),
     moveNode: (nodeId, position) => update((s) => moveNode(s, nodeId, position)),
     resizeGroup: (groupId, size) => update((s) => resizeGroup(s, groupId, size)),

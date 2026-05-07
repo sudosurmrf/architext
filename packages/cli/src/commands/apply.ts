@@ -1,7 +1,7 @@
 /**
  * @module @architext/cli/commands/apply
  * Concepts: [[ApplyCommand]], [[Pipeline]], [[Orchestrator]]
- * Spec: §5.2 apply pipeline
+ * Spec: Section 5.2 apply pipeline
  * Depends on: [[@architext/schema]], [[errors]], [[prompt/load]], [[prompt/build]], [[agent/backend]]
  * Consumed by: [[cli]]
  */
@@ -13,6 +13,11 @@ import { ExitCode, formatZodError } from "../errors";
 import { loadMetaPrompt } from "../prompt/load";
 import { buildPrompt } from "../prompt/build";
 import type { AgentBackend } from "../agent/backend";
+import {
+  buildScaffoldContract,
+  formatScaffoldVerification,
+  verifyScaffoldContract,
+} from "../contract";
 
 export interface ApplyOpts {
   specPath: string;
@@ -25,7 +30,9 @@ export interface ApplyOpts {
 }
 
 export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
-  // 1. Read & parse spec.
+  const startedAt = Date.now();
+
+  // 1. Read and parse spec.
   let raw: string;
   try {
     raw = readFileSync(opts.specPath, "utf-8");
@@ -47,6 +54,7 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
     return ExitCode.SpecInvalid;
   }
   const spec = parsed.data;
+  const contract = buildScaffoldContract(spec);
 
   // 2. Load meta-prompt and assemble final prompt.
   let meta: string;
@@ -56,7 +64,7 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
     opts.write((err as Error).message);
     return ExitCode.SpecInvalid;
   }
-  const fullPrompt = buildPrompt(meta, spec, opts.instructions);
+  const fullPrompt = buildPrompt(meta, spec, opts.instructions, contract);
 
   // 3. Dry-run short-circuit.
   if (opts.dryRun === true) {
@@ -74,7 +82,7 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
     return ExitCode.AgentNotInstalled;
   }
 
-  // 5. Resolve & prepare target directory.
+  // 5. Resolve and prepare target directory.
   const target = resolve(opts.cwd, spec.project.slug);
   if (existsSync(target) && opts.force !== true) {
     opts.write(
@@ -83,15 +91,16 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
     return ExitCode.TargetExists;
   }
   mkdirSync(target, { recursive: true });
+  opts.write("Architext apply");
+  opts.write(`  target: ${target}`);
+  opts.write(`  agent: ${opts.backend.name}`);
+  opts.write(`  expected files: ${contract.expectedPaths.length}`);
 
   // 6. Spawn backend.
   const run = opts.backend.spawn(fullPrompt, { cwd: target });
 
   // 7. Stream stdout lines through the write callback. Capture the iterator
-  //    promise so we can drain it before printing the summary line — otherwise
-  //    real backends with async stdout (Task 13's ClaudeCodeBackend) would
-  //    interleave or lose trailing lines because run.done can resolve before
-  //    the iterator finishes.
+  //    promise so we can drain it before printing the summary line.
   let streamError: Error | undefined;
   const stdoutDone = (async () => {
     for await (const line of run.stdoutLines) opts.write(line);
@@ -104,23 +113,36 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
   const result = await run.done;
   await stdoutDone;
 
-  // If the stream errored, prefer the crashed exit code over the backend's
-  // self-reported success — a broken transport means we can't trust "done".
   if (streamError !== undefined && result.kind === "done") {
     return ExitCode.AgentCrashed;
   }
 
   switch (result.kind) {
-    case "done":
+    case "done": {
+      const verification = verifyScaffoldContract(target, contract);
+      opts.write(formatScaffoldVerification(verification));
       opts.write(
-        `✓ created ${target} (${result.filesWritten} files written via ${opts.backend.name})`
+        `created ${target} (${result.filesWritten} files reported by ${opts.backend.name}, ${formatElapsed(Date.now() - startedAt)} elapsed)`
       );
-      return ExitCode.Success;
+      return verification.missingPaths.length === 0
+        ? ExitCode.Success
+        : ExitCode.ScaffoldContractFailed;
+    }
     case "failed":
       opts.write(`agent ended with ARCHITEXT_FAILED: ${result.reason}`);
+      opts.write(`partial output preserved at: ${target}`);
       return ExitCode.AgentFailedSentinel;
     case "crashed":
       opts.write(`agent crashed mid-run. Last stderr lines:\n${result.stderrTail}`);
+      opts.write(`partial output preserved at: ${target}`);
       return ExitCode.AgentCrashed;
   }
+}
+
+function formatElapsed(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}m${sec.toString().padStart(2, "0")}s`;
 }

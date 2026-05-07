@@ -27,12 +27,17 @@ export class MockAgentBackend implements AgentBackend {
     return this.cfg.installed ?? true;
   }
 
-  spawn(_prompt: string, opts: { cwd: string }): AgentRun {
+  spawn(prompt: string, opts: { cwd: string }): AgentRun {
     const lines: string[] = [];
     let result: AgentRunResult;
 
     if (this.cfg.outcome === "done") {
-      const files = this.cfg.filesToWrite ?? [];
+      const files =
+        this.cfg.filesToWrite ??
+        inferExpectedFiles(prompt).map((path) => ({
+          path,
+          content: path === "README.md" ? "# Mock scaffold\n\nnpm run dev\n" : "",
+        }));
       for (const f of files) {
         const full = resolve(opts.cwd, f.path);
         mkdirSync(dirname(full), { recursive: true });
@@ -56,4 +61,20 @@ export class MockAgentBackend implements AgentBackend {
       })(),
     };
   }
+}
+
+function inferExpectedFiles(prompt: string): string[] {
+  const start = prompt.indexOf("## Expected File Contract");
+  if (start < 0) return [];
+  const end = prompt.indexOf("```json", start);
+  const section = prompt.slice(start, end < 0 ? undefined : end);
+  const paths = new Set<string>();
+  for (const line of section.split(/\r?\n/)) {
+    const match = line.match(/^- ([^\s].*)$/);
+    if (!match) continue;
+    const path = match[1]?.trim();
+    if (!path || path.includes(" ") || path.endsWith(".")) continue;
+    paths.add(path);
+  }
+  return [...paths].sort();
 }

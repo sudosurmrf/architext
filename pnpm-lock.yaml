@@ -103,6 +103,12 @@ importers:
 
   packages/cli:
     dependencies:
+      '@architext/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@architext/files-engine':
+        specifier: workspace:*
+        version: link:../files-engine
       '@architext/schema':
         specifier: workspace:*
         version: link:../schema

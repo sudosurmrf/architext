@@ -15,6 +15,7 @@ import {
   getCached,
   setCache,
   generatePreview,
+  buildServiceAgentBrief,
 } from "../lib/code-preview";
 import type { Service, Edge } from "@architext/schema";
 import type { Highlighter } from "shiki";
@@ -73,6 +74,10 @@ function ServiceCard({ service, relatedEdges, apiKey }: ServiceCardProps) {
 
   const prompt = useMemo(
     () => buildServicePrompt(service, relatedEdges, spec),
+    [service, relatedEdges, spec],
+  );
+  const agentBrief = useMemo(
+    () => buildServiceAgentBrief(service, relatedEdges, spec),
     [service, relatedEdges, spec],
   );
 
@@ -165,7 +170,7 @@ function ServiceCard({ service, relatedEdges, apiKey }: ServiceCardProps) {
           </span>
         </div>
         <span className="shrink-0 ml-2 text-xs text-gray-400">
-          ~{tokenEstimate.toLocaleString()} tokens
+          preview ~{tokenEstimate.toLocaleString()} tokens
         </span>
       </div>
 
@@ -207,9 +212,16 @@ function ServiceCard({ service, relatedEdges, apiKey }: ServiceCardProps) {
           ) : code ? (
             "Regenerate"
           ) : (
-            "Preview Code"
+            "Optional Browser Preview"
           )}
         </button>
+      </div>
+
+      <div className="border-t border-gray-100 bg-gray-50 px-3 py-2">
+        <div className="mb-1 text-xs font-medium text-gray-600">Compiled Context</div>
+        <pre className="max-h-36 overflow-auto whitespace-pre-wrap rounded-md bg-white p-2 font-mono text-xs leading-relaxed text-gray-700">
+          {agentBrief}
+        </pre>
       </div>
 
       {/* Error */}
@@ -287,8 +299,7 @@ export function CodeTab() {
             API key required for code preview
           </p>
           <p className="text-xs text-amber-700 leading-snug">
-            Add your Anthropic API key to generate code previews for each service.
-            Your key stays in your browser and is never sent to our servers.
+            Optional browser previews use Anthropic directly. The real scaffold path is the local CLI contract.
           </p>
           <div className="flex gap-1">
             <input
@@ -327,7 +338,7 @@ export function CodeTab() {
       )}
 
       {/* Service cards */}
-      <h3 className="text-sm font-medium text-gray-700">Code Preview</h3>
+      <h3 className="text-sm font-medium text-gray-700">Agent Briefs</h3>
       <div className="space-y-2">
         {services.map((svc) => (
           <ServiceCard

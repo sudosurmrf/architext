@@ -1,14 +1,12 @@
 /**
  * @module @architext/web/lib/code-preview
- * Concepts: [[CodePreview]], [[TokenEstimation]], [[AnthropicAPI]], [[CacheInvalidation]]
- * Spec: §4.6 Side panel — Code tab (on-demand agent call per service)
+ * Concepts: [[CodePreview]], [[AgentBrief]], [[TokenEstimation]], [[AnthropicAPI]], [[CacheInvalidation]]
+ * Spec: Section 4.6 Side panel - Code tab with compiled service context and optional preview
  * Depends on: [[@architext/schema]] (ArchitextSpec, Service, Edge)
  * Consumed by: [[CodeTab]]
  */
 
 import type { ArchitextSpec, Service, Edge } from "@architext/schema";
-
-// ─── In-memory cache ────────────────────────────────────────────────────────
 
 const cache = new Map<string, string>();
 
@@ -20,25 +18,19 @@ export function setCache(key: string, code: string): void {
   cache.set(key, code);
 }
 
-// ─── Cache key ──────────────────────────────────────────────────────────────
-
 export function cacheKey(service: Service, edges: Edge[]): string {
   return JSON.stringify({
     id: service.id,
     components: service.components,
-    edges: edges.map((e) => ({ id: e.id, protocol: e.protocol })),
+    edges,
   });
 }
-
-// ─── Token estimation ───────────────────────────────────────────────────────
 
 export function estimateTokens(prompt: string): number {
   return Math.ceil(prompt.length / 4);
 }
 
-// ─── Prompt builder ─────────────────────────────────────────────────────────
-
-export function buildServicePrompt(
+export function buildServiceAgentBrief(
   service: Service,
   relatedEdges: Edge[],
   spec: ArchitextSpec,
@@ -56,19 +48,15 @@ export function buildServicePrompt(
 
   const inboundLines =
     inbound.length > 0
-      ? inbound
-          .map((e) => `  - from ${e.from} via ${e.protocol}`)
-          .join("\n")
+      ? inbound.map((e) => `  - from ${e.from} via ${formatEdgeProtocol(e)}`).join("\n")
       : "  (none)";
 
   const outboundLines =
     outbound.length > 0
-      ? outbound
-          .map((e) => `  - to ${e.to} via ${e.protocol}`)
-          .join("\n")
+      ? outbound.map((e) => `  - to ${e.to} via ${formatEdgeProtocol(e)}`).join("\n")
       : "  (none)";
 
-  return `You are a senior software architect. Generate idiomatic boilerplate code for the following service in the "${spec.project.name}" project (slug: ${spec.project.slug}).
+  return `Agent brief for "${spec.project.name}" (slug: ${spec.project.slug})
 
 Service: ${service.name}
 Kind: ${service.kind}
@@ -80,18 +68,61 @@ Inbound connections:
 ${inboundLines}
 
 Outbound connections:
-${outboundLines}
+${outboundLines}`;
+}
+
+function formatEdgeProtocol(edge: Edge): string {
+  const details: string[] = [];
+  switch (edge.protocol) {
+    case "http":
+      if (edge.basePath) details.push(`basePath=${edge.basePath}`);
+      if (edge.port) details.push(`port=${edge.port}`);
+      break;
+    case "graphql":
+      if (edge.path) details.push(`path=${edge.path}`);
+      if (edge.port) details.push(`port=${edge.port}`);
+      break;
+    case "grpc":
+      if (edge.port) details.push(`port=${edge.port}`);
+      break;
+    case "websocket":
+      if (edge.path) details.push(`path=${edge.path}`);
+      if (edge.port) details.push(`port=${edge.port}`);
+      break;
+    case "queue":
+      details.push(`topic=${edge.topicName}`);
+      if (edge.broker) details.push(`broker=${edge.broker}`);
+      break;
+    case "sql":
+      if (edge.database) details.push(`database=${edge.database}`);
+      if (edge.port) details.push(`port=${edge.port}`);
+      break;
+    case "key-value":
+      if (edge.namespace) details.push(`namespace=${edge.namespace}`);
+      break;
+    case "fs":
+      if (edge.mountPath) details.push(`mountPath=${edge.mountPath}`);
+      break;
+  }
+
+  return details.length > 0 ? `${edge.protocol} (${details.join(", ")})` : edge.protocol;
+}
+
+export function buildServicePrompt(
+  service: Service,
+  relatedEdges: Edge[],
+  spec: ArchitextSpec,
+): string {
+  return `${buildServiceAgentBrief(service, relatedEdges, spec)}
 
 Instructions:
-- Generate only idiomatic boilerplate — entry points, configuration, and wiring.
+- Generate only idiomatic boilerplate - entry points, configuration, and wiring.
 - Do NOT generate a full scaffold (no package managers, no CI, no README).
 - Use the components listed above to determine language, framework, and libraries.
 - Include connection setup for each inbound/outbound edge based on its protocol.
 - Add brief inline comments explaining each section.
 - Return a single fenced code block with the filename as a comment on the first line.`;
 }
-
-// ─── API call ───────────────────────────────────────────────────────────────
 
 export async function generatePreview(
   prompt: string,

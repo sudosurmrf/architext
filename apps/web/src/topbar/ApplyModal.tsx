@@ -10,13 +10,19 @@ import { useCallback, useEffect, useState, useMemo } from "react";
 import { Check, Copy } from "lucide-react";
 import { useSpecStore } from "../store/spec-store";
 import { prepareForExport } from "../lib/export-spec";
+import { computeFileTree } from "@architext/files-engine";
+import { loadCatalog } from "@architext/catalog";
 
 export interface ApplyModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-const CLI_COMMAND = "npx architext apply ./architext-spec.json";
+const GIT_BASH_APPLY_COMMAND = "architext-create";
+const GIT_BASH_FORCE_COMMAND = "architext-create --force";
+const GIT_BASH_DRY_RUN_COMMAND = "architext-create --dry-run";
+const WINDOWS_APPLY_COMMAND = "architext-create";
+const WINDOWS_FORCE_COMMAND = "architext-create --force";
 
 export function ApplyModal({ open, onClose }: ApplyModalProps) {
   const spec = useSpecStore((s) => s.spec);
@@ -38,13 +44,17 @@ export function ApplyModal({ open, onClose }: ApplyModalProps) {
   }, [open, onClose]);
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(CLI_COMMAND);
+    await navigator.clipboard.writeText(GIT_BASH_APPLY_COMMAND);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, []);
 
   const exportedSpec = useMemo(() => prepareForExport(spec), [spec]);
   const jsonString = useMemo(() => JSON.stringify(exportedSpec, null, 2), [exportedSpec]);
+  const predictedFileCount = useMemo(
+    () => computeFileTree(exportedSpec, loadCatalog()).paths.length,
+    [exportedSpec],
+  );
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -70,16 +80,33 @@ export function ApplyModal({ open, onClose }: ApplyModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-2 text-lg font-semibold">Apply with CLI</h2>
-        <p className="mb-4 text-sm text-gray-600">
-          Run this command in your terminal to scaffold the project:
-        </p>
+        <div className="mb-4 grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-2">
+            <div className="font-semibold text-gray-800">{exportedSpec.services.length}</div>
+            <div className="text-gray-500">services</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-2">
+            <div className="font-semibold text-gray-800">{exportedSpec.edges.length}</div>
+            <div className="text-gray-500">edges</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-2">
+            <div className="font-semibold text-gray-800">{predictedFileCount}</div>
+            <div className="text-gray-500">files</div>
+          </div>
+        </div>
 
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-mono text-sm text-green-400">
-          <code className="flex-1">{CLI_COMMAND}</code>
+        <div className="mb-1 text-xs font-medium text-gray-600">Git Bash</div>
+        <div className="mb-3 overflow-x-auto rounded-lg bg-gray-900 px-4 py-3 font-mono text-xs text-green-400">
+          <div>{GIT_BASH_APPLY_COMMAND}</div>
+          <div>{GIT_BASH_FORCE_COMMAND}</div>
+        </div>
+
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-600">
+          <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">{GIT_BASH_DRY_RUN_COMMAND}</code>
           <button
             onClick={handleCopy}
-            className="text-gray-400 transition-colors hover:text-white"
-            title="Copy"
+            className="text-gray-500 transition-colors hover:text-gray-900"
+            title="Copy Git Bash build and apply commands"
           >
             {copied ? (
               <Check className="h-4 w-4" />
@@ -87,6 +114,12 @@ export function ApplyModal({ open, onClose }: ApplyModalProps) {
               <Copy className="h-4 w-4" />
             )}
           </button>
+        </div>
+
+        <div className="mb-1 text-xs font-medium text-gray-500">PowerShell / CMD</div>
+        <div className="mb-4 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-600">
+          <div>{WINDOWS_APPLY_COMMAND}</div>
+          <div>{WINDOWS_FORCE_COMMAND}</div>
         </div>
 
         <div className="flex gap-2">

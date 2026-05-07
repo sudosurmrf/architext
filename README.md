@@ -21,8 +21,14 @@ pnpm install
 # Start the web app (opens at http://localhost:5173)
 pnpm dev
 
-# Run the CLI
-npx architext
+# Install the local create command once
+./install-architext-create
+
+# Alternative if pnpm globals are configured
+pnpm --dir packages/cli link --global
+
+# From any output folder containing architext-spec.json, create the scaffold
+architext-create
 ```
 
 ## Repo layout
@@ -42,4 +48,8 @@ pnpm install
 pnpm test        # run all tests
 pnpm build       # build all packages + web app
 pnpm typecheck   # type-check without emitting
+pnpm web:test    # run only web app tests
+pnpm cli:test    # run only CLI tests
+pnpm cli:build   # build only the local CLI
+architext-create --force   # rerun generation with overwrite
 ```

@@ -19,6 +19,27 @@ npx architext --version
 npx architext --help
 ```
 
+For local development, link the package once:
+
+```bash
+./install-architext-create
+
+# Or, if pnpm globals are configured:
+pnpm --dir packages/cli link --global
+```
+
+Then create a project from any folder that contains `architext-spec.json`:
+
+```bash
+architext-create
+architext-create --force
+architext-create ./my-spec.json --dry-run
+```
+
+The `claude-code` backend runs `claude --print --permission-mode acceptEdits`
+inside the generated target directory so Claude can create scaffold files
+without pausing for interactive edit approvals.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -30,3 +51,4 @@ npx architext --help
 | 4 | Target dir exists, no `--force` |
 | 5 | Agent crashed mid-run |
 | 6 | Agent finished with `ARCHITEXT_FAILED` |
+| 7 | Agent finished, but expected scaffold files are missing |

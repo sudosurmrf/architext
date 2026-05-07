@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+
+const { spawnSync } = require("node:child_process");
+const { existsSync } = require("node:fs");
+const { resolve } = require("node:path");
+
+const repoRoot = __dirname;
+const cwd = process.cwd();
+const args = process.argv.slice(2);
+const specArg = args.find((arg) => !arg.startsWith("-")) ?? "./architext-spec.json";
+const passThroughFlags = args.filter((arg) => arg.startsWith("-"));
+const specPath = resolve(cwd, specArg);
+const cliPath = resolve(repoRoot, "packages", "cli", "dist", "create-bin.js");
+
+if (!existsSync(specPath)) {
+  console.error(`architext spec not found: ${specPath}`);
+  console.error("Run this from your output folder, or pass a spec path:");
+  console.error("  node ../runCreate ./architext-spec.json");
+  process.exit(2);
+}
+
+run("pnpm", ["cli:build"], repoRoot);
+run("node", [cliPath, specPath, ...passThroughFlags], cwd);
+
+function run(command, commandArgs, commandCwd) {
+  const result = spawnSync(command, commandArgs, {
+    cwd: commandCwd,
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+
+  if (result.error) {
+    console.error(result.error.message);
+    process.exit(1);
+  }
+
+  if (typeof result.status === "number" && result.status !== 0) {
+    process.exit(result.status);
+  }
+}

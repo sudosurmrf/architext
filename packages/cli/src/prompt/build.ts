@@ -7,13 +7,23 @@
  */
 
 import type { ArchitextSpec } from "@architext/schema";
+import {
+  formatScaffoldContract,
+  type ScaffoldContract,
+} from "../contract";
 
 export function buildPrompt(
   meta: string,
   spec: ArchitextSpec,
-  instructions?: string
+  instructions?: string,
+  contract?: ScaffoldContract
 ): string {
   const parts: string[] = [meta];
+
+  if (contract !== undefined) {
+    parts.push("");
+    parts.push(formatScaffoldContract(spec, contract));
+  }
 
   if (instructions !== undefined && instructions.trim().length > 0) {
     parts.push("");
