@@ -17,6 +17,8 @@ export type PaletteCategory =
   | "libraries"
   | "build-tools"
   | "datastores"
+  | "infrastructure"
+  | "aws"
   | "auth"
   | "entry-points";
 
@@ -38,6 +40,9 @@ export interface UIState {
   // ─── Side Panel ───────────────────────────────────
   panelTab: PanelTab;
   setPanelTab: (tab: PanelTab) => void;
+  propertiesOpen: boolean;
+  setPropertiesOpen: (open: boolean) => void;
+  toggleProperties: () => void;
 
   // ─── Modals ───────────────────────────────────────
   exportModalOpen: boolean;
@@ -74,6 +79,9 @@ export const useUIStore = create<UIState>((set) => ({
   // Panel
   panelTab: "spec",
   setPanelTab: (tab) => set({ panelTab: tab }),
+  propertiesOpen: false,
+  setPropertiesOpen: (open) => set({ propertiesOpen: open }),
+  toggleProperties: () => set((state) => ({ propertiesOpen: !state.propertiesOpen })),
 
   // Modals
   exportModalOpen: false,

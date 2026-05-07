@@ -7,12 +7,16 @@
  */
 
 import { useState } from "react";
-import { Layers, Download, Pencil, Terminal } from "lucide-react";
+import { Layers, Download, Pencil, RotateCcw, Terminal } from "lucide-react";
 import { useSpecStore } from "../store/spec-store";
 import { useUIStore } from "../store/ui-store";
 import { ProjectSettingsModal } from "./ProjectSettingsModal";
 
-export function TopBar() {
+export interface TopBarProps {
+  onResetDesign: () => void;
+}
+
+export function TopBar({ onResetDesign }: TopBarProps) {
   const project = useSpecStore((s) => s.spec.project);
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
   const setExportModalOpen = useUIStore((s) => s.setExportModalOpen);
@@ -39,6 +43,14 @@ export function TopBar() {
           </button>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onResetDesign}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+            title="Reset design"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Reset</span>
+          </button>
           <button
             onClick={() => setExportModalOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50"

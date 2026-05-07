@@ -90,6 +90,44 @@ describe("instantiatePattern", () => {
     }
   });
 
+  it("preserves cloud protocol-specific fields", () => {
+    const cloudPattern: Pattern = {
+      id: "cloud",
+      name: "cloud",
+      description: "cloud",
+      fragment: {
+        services: [
+          { name: "api", kind: "backend-service", tmpId: "api" },
+          { name: "infra", kind: "infrastructure", tmpId: "infra" },
+        ],
+        edges: [
+          { from: "api", to: "infra", protocol: "event", eventBus: "app", source: "api", detailType: "created" },
+          { from: "api", to: "infra", protocol: "object-storage", bucket: "assets", prefix: "uploads/" },
+          { from: "api", to: "infra", protocol: "identity", provider: "cognito", scopes: ["openid"] },
+          { from: "api", to: "infra", protocol: "secret", namespace: "app" },
+          { from: "api", to: "infra", protocol: "container-image", repository: "api", tag: "latest" },
+          { from: "api", to: "infra", protocol: "lambda-invoke", functionName: "handler", invocationType: "request-response", endpointVisibility: "private", authorizer: "iam" },
+          { from: "api", to: "infra", protocol: "dns", domainName: "app.example.com", recordType: "A" },
+        ],
+      },
+    };
+    let n = 0;
+    const result = instantiatePattern(cloudPattern, { x: 0, y: 0 }, () => `id-${++n}`);
+
+    expect(result.edges).toHaveLength(7);
+    expect(result.edges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ protocol: "event", eventBus: "app", source: "api", detailType: "created" }),
+        expect.objectContaining({ protocol: "object-storage", bucket: "assets", prefix: "uploads/" }),
+        expect.objectContaining({ protocol: "identity", provider: "cognito", scopes: ["openid"] }),
+        expect.objectContaining({ protocol: "secret", namespace: "app" }),
+        expect.objectContaining({ protocol: "container-image", repository: "api", tag: "latest" }),
+        expect.objectContaining({ protocol: "lambda-invoke", functionName: "handler", invocationType: "request-response", endpointVisibility: "private", authorizer: "iam" }),
+        expect.objectContaining({ protocol: "dns", domainName: "app.example.com", recordType: "A" }),
+      ]),
+    );
+  });
+
   it("throws when an edge tmpId reference doesn't match a service", () => {
     const broken: Pattern = {
       id: "p",

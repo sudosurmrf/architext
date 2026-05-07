@@ -3,7 +3,23 @@ import { ProtocolSchema, EdgeSchema } from "../src/edge";
 
 describe("ProtocolSchema", () => {
   it("accepts each documented protocol", () => {
-    const ps = ["http", "graphql", "grpc", "websocket", "queue", "sql", "key-value", "fs"];
+    const ps = [
+      "http",
+      "graphql",
+      "grpc",
+      "websocket",
+      "queue",
+      "sql",
+      "key-value",
+      "fs",
+      "event",
+      "object-storage",
+      "identity",
+      "secret",
+      "container-image",
+      "lambda-invoke",
+      "dns",
+    ];
     for (const p of ps) {
       expect(ProtocolSchema.safeParse(p).success).toBe(true);
     }
@@ -50,6 +66,37 @@ describe("EdgeSchema (discriminated union)", () => {
   it("accepts sql with optional database and port", () => {
     expect(
       EdgeSchema.safeParse({ ...baseId, protocol: "sql", database: "app", port: 5432 }).success
+    ).toBe(true);
+  });
+
+  it("accepts cloud integration protocols with optional fields", () => {
+    expect(
+      EdgeSchema.safeParse({ ...baseId, protocol: "event", eventBus: "app", detailType: "created" }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({ ...baseId, protocol: "object-storage", bucket: "assets", prefix: "uploads/" }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({ ...baseId, protocol: "identity", provider: "cognito", scopes: ["openid"] }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({ ...baseId, protocol: "secret", namespace: "app" }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({ ...baseId, protocol: "container-image", repository: "api", tag: "latest" }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({
+        ...baseId,
+        protocol: "lambda-invoke",
+        functionName: "handler",
+        invocationType: "request-response",
+        endpointVisibility: "private",
+        authorizer: "iam",
+      }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({ ...baseId, protocol: "dns", domainName: "app.example.com", recordType: "A" }).success
     ).toBe(true);
   });
 

@@ -10,6 +10,7 @@ describe("ComponentCategorySchema", () => {
       "library",
       "build-tool",
       "datastore",
+      "infrastructure",
       "auth",
       "entry-point",
     ];

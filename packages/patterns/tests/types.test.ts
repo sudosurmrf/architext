@@ -23,6 +23,22 @@ describe("SpecFragmentSchema", () => {
     expect(SpecFragmentSchema.safeParse({ edges: [] }).success).toBe(false);
     expect(SpecFragmentSchema.safeParse({ services: [] }).success).toBe(false);
   });
+
+  it("accepts cloud protocol edge metadata", () => {
+    const fragment = {
+      services: [
+        { name: "api", kind: "backend-service", tmpId: "api" },
+        { name: "infra", kind: "infrastructure", tmpId: "infra" },
+      ],
+      edges: [
+        { from: "api", to: "infra", protocol: "event", eventBus: "app", detailType: "created" },
+        { from: "api", to: "infra", protocol: "container-image", repository: "api", tag: "latest" },
+        { from: "api", to: "infra", protocol: "lambda-invoke", functionName: "handler", endpointVisibility: "private" },
+        { from: "api", to: "infra", protocol: "dns", domainName: "app.example.com", recordType: "A" },
+      ],
+    };
+    expect(SpecFragmentSchema.safeParse(fragment).success).toBe(true);
+  });
 });
 
 describe("PatternSchema", () => {

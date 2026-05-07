@@ -14,6 +14,7 @@ import { buildTools } from "./build-tools";
 import { backend } from "./backend";
 import { datastores } from "./datastores";
 import { queues } from "./queues";
+import { infrastructure } from "./infrastructure";
 import { auth } from "./auth";
 import { entryPoints } from "./entry-points";
 
@@ -25,6 +26,7 @@ export const allEntries: readonly CatalogEntry[] = Object.freeze([
   ...backend,
   ...datastores,
   ...queues,
+  ...infrastructure,
   ...auth,
   ...entryPoints,
 ]);

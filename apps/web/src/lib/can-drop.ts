@@ -27,6 +27,7 @@ const COMPATIBLE_CATEGORIES: Record<ServiceKind, readonly ComponentCategory[]> =
   database: ["datastore"],
   cache: ["datastore"],
   queue: ["datastore"],
+  infrastructure: ["infrastructure"],
   sidecar: ["language", "runtime", "framework", "library", "entry-point"],
   "external-api": ["entry-point"],
 };

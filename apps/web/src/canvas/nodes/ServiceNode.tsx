@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Box,
   Globe,
+  CloudCog,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ServiceNodeData } from "../../lib/to-react-flow";
@@ -31,6 +32,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   library: "bg-violet-100 text-violet-700",
   "build-tool": "bg-amber-100 text-amber-700",
   datastore: "bg-emerald-100 text-emerald-700",
+  infrastructure: "bg-sky-100 text-sky-700",
   auth: "bg-rose-100 text-rose-700",
   runtime: "bg-teal-100 text-teal-700",
   "entry-point": "bg-gray-100 text-gray-700",
@@ -44,6 +46,7 @@ const KIND_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   database: Database,
   cache: Zap,
   queue: MessageSquare,
+  infrastructure: CloudCog,
   sidecar: Box,
   "external-api": Globe,
 };

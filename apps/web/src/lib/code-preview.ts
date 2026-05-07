@@ -42,6 +42,7 @@ export function buildServiceAgentBrief(
     .map((c) => {
       const parts = [`  - ${c.id} (${c.category})`];
       if (c.version) parts.push(` v${c.version}`);
+      if (c.config) parts.push(` config=${JSON.stringify(c.config)}`);
       return parts.join("");
     })
     .join("\n");
@@ -56,10 +57,16 @@ export function buildServiceAgentBrief(
       ? outbound.map((e) => `  - to ${e.to} via ${formatEdgeProtocol(e)}`).join("\n")
       : "  (none)";
 
+  const contractLines =
+    service.contracts && service.contracts.length > 0
+      ? service.contracts.map(formatServiceContract).join("\n")
+      : "  (none)";
+
   return `Agent brief for "${spec.project.name}" (slug: ${spec.project.slug})
 
 Service: ${service.name}
 Kind: ${service.kind}
+Description: ${service.description ?? "(none)"}
 
 Components:
 ${componentLines || "  (none)"}
@@ -68,7 +75,19 @@ Inbound connections:
 ${inboundLines}
 
 Outbound connections:
-${outboundLines}`;
+${outboundLines}
+
+Service contracts:
+${contractLines}`;
+}
+
+function formatServiceContract(contract: NonNullable<Service["contracts"]>[number]): string {
+  const lines = [`  - ${contract.name} (${contract.direction})`];
+  if (contract.edgeId) lines.push(`    edge: ${contract.edgeId}`);
+  if (contract.contentType) lines.push(`    contentType: ${contract.contentType}`);
+  if (contract.schema) lines.push(`    schema: ${contract.schema}`);
+  if (contract.notes) lines.push(`    notes: ${contract.notes}`);
+  return lines.join("\n");
 }
 
 function formatEdgeProtocol(edge: Edge): string {
@@ -102,6 +121,37 @@ function formatEdgeProtocol(edge: Edge): string {
       break;
     case "fs":
       if (edge.mountPath) details.push(`mountPath=${edge.mountPath}`);
+      break;
+    case "event":
+      if (edge.eventBus) details.push(`bus=${edge.eventBus}`);
+      if (edge.source) details.push(`source=${edge.source}`);
+      if (edge.detailType) details.push(`detailType=${edge.detailType}`);
+      break;
+    case "object-storage":
+      if (edge.bucket) details.push(`bucket=${edge.bucket}`);
+      if (edge.prefix) details.push(`prefix=${edge.prefix}`);
+      break;
+    case "identity":
+      if (edge.provider) details.push(`provider=${edge.provider}`);
+      if (edge.scopes) details.push(`scopes=${edge.scopes.join(",")}`);
+      break;
+    case "secret":
+      if (edge.namespace) details.push(`namespace=${edge.namespace}`);
+      break;
+    case "container-image":
+      if (edge.repository) details.push(`repository=${edge.repository}`);
+      if (edge.tag) details.push(`tag=${edge.tag}`);
+      break;
+    case "lambda-invoke":
+      if (edge.functionName) details.push(`function=${edge.functionName}`);
+      if (edge.invocationType) details.push(`invocation=${edge.invocationType}`);
+      if (edge.qualifier) details.push(`qualifier=${edge.qualifier}`);
+      if (edge.endpointVisibility) details.push(`endpoint=${edge.endpointVisibility}`);
+      if (edge.authorizer) details.push(`authorizer=${edge.authorizer}`);
+      break;
+    case "dns":
+      if (edge.domainName) details.push(`domain=${edge.domainName}`);
+      if (edge.recordType) details.push(`recordType=${edge.recordType}`);
       break;
   }
 

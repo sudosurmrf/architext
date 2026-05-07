@@ -40,7 +40,7 @@ import {
   type DimensionChange,
 } from "../lib/from-react-flow";
 
-function emptySpec(): ArchitextSpec {
+export function createEmptySpec(): ArchitextSpec {
   return {
     schemaVersion: "0.1.0",
     project: { name: "Untitled", slug: "untitled" },
@@ -59,6 +59,7 @@ export interface SpecState {
 
   // ─── Actions ───────────────────────────────────────────
   setSpec: (spec: ArchitextSpec) => void;
+  resetSpec: () => ArchitextSpec;
   updateProject: (name: string, slug: string, description?: string) => void;
   addGroup: (params: AddGroupParams) => void;
   addService: (params: AddServiceParams) => void;
@@ -87,13 +88,18 @@ export const useSpecStore = create<SpecState>((set) => {
       return { spec, rfGraph: specToReactFlow(spec) };
     });
 
-  const initial = emptySpec();
+  const initial = createEmptySpec();
 
   return {
     spec: initial,
     rfGraph: specToReactFlow(initial),
 
     setSpec: (spec) => set({ spec, rfGraph: specToReactFlow(spec) }),
+    resetSpec: () => {
+      const spec = createEmptySpec();
+      set({ spec, rfGraph: specToReactFlow(spec) });
+      return spec;
+    },
     updateProject: (name, slug, description) =>
       update((s) => {
         const project = { ...s.project, name, slug };

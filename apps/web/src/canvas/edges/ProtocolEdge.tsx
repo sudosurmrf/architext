@@ -28,6 +28,13 @@ const PROTOCOL_COLORS: Record<string, { stroke: string; bg: string; text: string
   sql:         { stroke: "#6366f1", bg: "#e0e7ff", text: "#4338ca" },
   "key-value": { stroke: "#14b8a6", bg: "#ccfbf1", text: "#0f766e" },
   fs:          { stroke: "#6b7280", bg: "#f3f4f6", text: "#374151" },
+  event:       { stroke: "#9333ea", bg: "#f3e8ff", text: "#7e22ce" },
+  "object-storage": { stroke: "#0891b2", bg: "#cffafe", text: "#0e7490" },
+  identity:    { stroke: "#10b981", bg: "#d1fae5", text: "#047857" },
+  secret:      { stroke: "#ef4444", bg: "#fee2e2", text: "#b91c1c" },
+  "container-image": { stroke: "#8b5cf6", bg: "#ede9fe", text: "#6d28d9" },
+  "lambda-invoke": { stroke: "#d946ef", bg: "#fae8ff", text: "#a21caf" },
+  dns:         { stroke: "#0ea5e9", bg: "#e0f2fe", text: "#0369a1" },
 };
 
 /** Protocol display labels */
@@ -40,6 +47,13 @@ const PROTOCOL_LABELS: Record<string, string> = {
   sql: "SQL",
   "key-value": "KV",
   fs: "FS",
+  event: "Event",
+  "object-storage": "Object",
+  identity: "Identity",
+  secret: "Secret",
+  "container-image": "Image",
+  "lambda-invoke": "Lambda",
+  dns: "DNS",
 };
 
 function getProtocolColors(protocol: string) {

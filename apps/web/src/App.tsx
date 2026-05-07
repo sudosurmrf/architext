@@ -16,11 +16,12 @@ import { PaletteRail } from "./palette/PaletteRail";
 import { PalettePanel } from "./palette/PalettePanel";
 import { Canvas } from "./canvas/Canvas";
 import { SidePanel } from "./panel/SidePanel";
+import { PropertiesDrawer } from "./panel/PropertiesDrawer";
 
 import { useSpecStore } from "./store/spec-store";
 import { useUIStore } from "./store/ui-store";
 import { SpecHistory } from "./store/history";
-import { loadSpec, loadHistory } from "./persistence/idb";
+import { clearAll, loadSpec, loadHistory } from "./persistence/idb";
 import { startAutoSave } from "./persistence/auto-save";
 import { prepareForExport } from "./lib/export-spec";
 
@@ -35,6 +36,7 @@ export function App() {
   const setApplyModalOpen = useUIStore((s) => s.setApplyModalOpen);
   const closePalette = useUIStore((s) => s.closePalette);
   const clearSelection = useUIStore((s) => s.clearSelection);
+  const setPropertiesOpen = useUIStore((s) => s.setPropertiesOpen);
 
   // ─── Initialization: load from IndexedDB + start auto-save ────
   useEffect(() => {
@@ -91,6 +93,28 @@ export function App() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, []);
+
+  const handleResetDesign = useCallback(async () => {
+    const confirmed = window.confirm(
+      "Reset this design and clear the saved local draft? This cannot be undone.",
+    );
+    if (!confirmed) return;
+
+    await clearAll();
+    const spec = useSpecStore.getState().resetSpec();
+    historyRef.current = new SpecHistory(spec);
+    closePalette();
+    clearSelection();
+    setPropertiesOpen(false);
+    setExportModalOpen(false);
+    setApplyModalOpen(false);
+  }, [
+    clearSelection,
+    closePalette,
+    setApplyModalOpen,
+    setExportModalOpen,
+    setPropertiesOpen,
+  ]);
 
   // ─── Global keyboard shortcuts ────────────────────────────────
   useEffect(() => {
@@ -182,7 +206,7 @@ export function App() {
   // ─── Render ───────────────────────────────────────────────────
   return (
     <div className="flex h-screen w-screen flex-col bg-gray-50 text-gray-900">
-      <TopBar />
+      <TopBar onResetDesign={handleResetDesign} />
 
       <div className="relative flex flex-1 overflow-hidden">
         <PaletteRail />
@@ -193,6 +217,7 @@ export function App() {
         </div>
 
         <SidePanel />
+        <PropertiesDrawer />
       </div>
 
       <ExportModal

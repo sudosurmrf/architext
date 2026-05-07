@@ -90,6 +90,79 @@ describe("buildServicePrompt", () => {
     expect(prompt).toContain("basePath=/v1");
     expect(prompt).toContain("port=8080");
   });
+
+  it("includes component config and cloud-native edge details", () => {
+    const service = makeService({
+      kind: "infrastructure",
+      components: [
+        {
+          id: "aws-ecs-fargate",
+          category: "infrastructure",
+          config: { integrationPatterns: ["ALB routes to ECS"] },
+        },
+      ],
+    });
+    const edge = makeEdge({
+      id: "edge-image",
+      from: "svc-api",
+      to: "svc-infra",
+      protocol: "container-image",
+      repository: "api",
+      tag: "latest",
+    } as Edge);
+    const spec = makeSpec({ services: [service], edges: [edge] });
+    const prompt = buildServicePrompt(service, [edge], spec);
+
+    expect(prompt).toContain("config=");
+    expect(prompt).toContain("ALB routes to ECS");
+    expect(prompt).toContain("repository=api");
+    expect(prompt).toContain("tag=latest");
+  });
+
+  it("formats object storage, identity, event, lambda invoke, secret, and dns edges", () => {
+    const service = makeService();
+    const edges = [
+      makeEdge({ id: "event", protocol: "event", eventBus: "app", detailType: "created" } as Edge),
+      makeEdge({ id: "object", protocol: "object-storage", bucket: "assets", prefix: "uploads/" } as Edge),
+      makeEdge({ id: "identity", protocol: "identity", provider: "cognito", scopes: ["openid"] } as Edge),
+      makeEdge({ id: "lambda", protocol: "lambda-invoke", functionName: "handler", invocationType: "request-response", endpointVisibility: "private", authorizer: "iam" } as Edge),
+      makeEdge({ id: "secret", protocol: "secret", namespace: "app" } as Edge),
+      makeEdge({ id: "dns", protocol: "dns", domainName: "app.example.com", recordType: "A" } as Edge),
+    ];
+    const spec = makeSpec({ services: [service], edges });
+    const prompt = buildServicePrompt(service, edges, spec);
+
+    expect(prompt).toContain("bus=app");
+    expect(prompt).toContain("bucket=assets");
+    expect(prompt).toContain("provider=cognito");
+    expect(prompt).toContain("function=handler");
+    expect(prompt).toContain("endpoint=private");
+    expect(prompt).toContain("namespace=app");
+    expect(prompt).toContain("domain=app.example.com");
+  });
+
+  it("includes service descriptions and payload contracts", () => {
+    const service = makeService({
+      description: "Owns task creation.",
+      contracts: [
+        {
+          id: "edge-http-inbound",
+          name: "Create task request",
+          edgeId: "edge-http",
+          direction: "inbound",
+          contentType: "application/json",
+          schema: '{ "title": "string" }',
+        },
+      ],
+    });
+    const edge = makeEdge({ id: "edge-http", from: "svc-web", to: "svc-api" });
+    const spec = makeSpec({ services: [service], edges: [edge] });
+    const prompt = buildServicePrompt(service, [edge], spec);
+
+    expect(prompt).toContain("Owns task creation.");
+    expect(prompt).toContain("Create task request");
+    expect(prompt).toContain('{ "title": "string" }');
+  });
 });
 
 describe("buildServiceAgentBrief", () => {

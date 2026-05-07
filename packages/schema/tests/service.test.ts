@@ -10,6 +10,7 @@ describe("ServiceKindSchema", () => {
       "database",
       "cache",
       "queue",
+      "infrastructure",
       "sidecar",
       "external-api",
     ];
@@ -40,6 +41,25 @@ describe("ServiceSchema", () => {
     expect(ServiceSchema.parse({ ...valid, groupId: "g1" }).groupId).toBe("g1");
   });
 
+  it("accepts optional description and service contracts", () => {
+    const result = ServiceSchema.parse({
+      ...valid,
+      description: "Public API for the app.",
+      contracts: [
+        {
+          id: "edge1-outbound",
+          name: "Create task request",
+          edgeId: "edge1",
+          direction: "outbound",
+          contentType: "application/json",
+          schema: '{ "title": "string" }',
+        },
+      ],
+    });
+    expect(result.description).toBe("Public API for the app.");
+    expect(result.contracts?.[0]?.schema).toContain("title");
+  });
+
   it("rejects empty name", () => {
     expect(ServiceSchema.safeParse({ ...valid, name: "" }).success).toBe(false);
   });
@@ -55,6 +75,18 @@ describe("ServiceSchema", () => {
         components: [
           { id: "react", category: "library" },
           { id: "react", category: "library" },
+        ],
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects contracts with duplicate ids", () => {
+    expect(
+      ServiceSchema.safeParse({
+        ...valid,
+        contracts: [
+          { id: "c1", name: "A", direction: "outbound" },
+          { id: "c1", name: "B", direction: "inbound" },
         ],
       }).success
     ).toBe(false);

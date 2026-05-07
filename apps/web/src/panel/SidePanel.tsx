@@ -10,7 +10,6 @@ import { useUIStore, type PanelTab } from "../store/ui-store";
 import { SpecTab } from "./SpecTab";
 import { FilesTab } from "./FilesTab";
 import { CodeTab } from "./CodeTab";
-import { Inspector } from "./Inspector";
 
 const tabs: { id: PanelTab; label: string }[] = [
   { id: "spec", label: "Spec" },
@@ -21,7 +20,6 @@ const tabs: { id: PanelTab; label: string }[] = [
 export function SidePanel() {
   const panelTab = useUIStore((s) => s.panelTab);
   const setPanelTab = useUIStore((s) => s.setPanelTab);
-  const selectedIds = useUIStore((s) => s.selectedIds);
 
   return (
     <div className="flex h-full w-80 flex-col border-l border-gray-200 bg-white">
@@ -49,13 +47,6 @@ export function SidePanel() {
         {panelTab === "files" && <FilesTab />}
         {panelTab === "code" && <CodeTab />}
       </div>
-
-      {/* Inspector */}
-      {selectedIds.size > 0 && (
-        <div className="border-t border-gray-200 max-h-[50%] overflow-y-auto">
-          <Inspector />
-        </div>
-      )}
     </div>
   );
 }

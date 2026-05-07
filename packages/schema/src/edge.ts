@@ -18,6 +18,13 @@ export const ProtocolSchema = z.enum([
   "sql",
   "key-value",
   "fs",
+  "event",
+  "object-storage",
+  "identity",
+  "secret",
+  "container-image",
+  "lambda-invoke",
+  "dns",
 ]);
 export type Protocol = z.infer<typeof ProtocolSchema>;
 
@@ -64,6 +71,44 @@ export const EdgeSchema = z.discriminatedUnion("protocol", [
   Base.extend({
     protocol: z.literal("fs"),
     mountPath: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("event"),
+    eventBus: z.string().optional(),
+    source: z.string().optional(),
+    detailType: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("object-storage"),
+    bucket: z.string().optional(),
+    prefix: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("identity"),
+    provider: z.string().optional(),
+    scopes: z.array(z.string().min(1)).optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("secret"),
+    namespace: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("container-image"),
+    repository: z.string().optional(),
+    tag: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("lambda-invoke"),
+    functionName: z.string().optional(),
+    invocationType: z.enum(["request-response", "event"]).optional(),
+    qualifier: z.string().optional(),
+    endpointVisibility: z.enum(["public", "private"]).optional(),
+    authorizer: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("dns"),
+    domainName: z.string().optional(),
+    recordType: z.string().optional(),
   }).strict(),
 ]);
 export type Edge = z.infer<typeof EdgeSchema>;

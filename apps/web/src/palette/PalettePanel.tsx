@@ -49,13 +49,18 @@ export function PalettePanel() {
   const filtered = useMemo(() => {
     if (!search.trim()) return items;
     const q = search.toLowerCase();
-    return items.filter((item) => item.name.toLowerCase().includes(q));
+    return items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.tags?.some((tag) => tag.toLowerCase().includes(q)),
+    );
   }, [items, search]);
 
   if (!paletteOpen || !paletteCategory) return null;
 
   return (
-    <div className="absolute left-14 top-0 z-30 flex h-full w-64 flex-col border-r border-gray-200 bg-white shadow-lg">
+    <div className="absolute left-14 top-0 z-30 flex h-full w-80 flex-col border-r border-gray-200 bg-white shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
         <span className="text-sm font-semibold text-gray-700 capitalize">
@@ -128,9 +133,23 @@ function PaletteCard({ item }: { item: PaletteItem }) {
           {compatLabel}
         </span>
       </div>
-      <p className="mt-0.5 text-xs text-gray-500 line-clamp-1">
+      <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">
         {item.description}
       </p>
+      {(item.tags?.length ?? 0) > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {item.tags?.slice(0, 4).map((tag) => (
+            <span key={tag} className="rounded bg-white px-1.5 py-0.5 text-[10px] text-gray-500">
+              {tag}
+            </span>
+          ))}
+          {(item.integrationPatterns?.length ?? 0) > 0 && (
+            <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-600">
+              {item.integrationPatterns!.length} patterns
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

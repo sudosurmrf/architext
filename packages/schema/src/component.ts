@@ -16,6 +16,7 @@ export const ComponentCategorySchema = z.enum([
   "library",
   "build-tool",
   "datastore",
+  "infrastructure",
   "auth",
   "entry-point",
 ]);

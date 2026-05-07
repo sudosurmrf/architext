@@ -8,7 +8,9 @@ local dev command (e.g., `npm run dev`, `uvicorn main:app --reload`).
 ## Hard Constraints
 
 - Write all files into the current working directory. Do NOT cd elsewhere.
-- No Docker, no docker-compose, no Kubernetes — defer containerization.
+- Do not containerize application services unless the spec includes an
+  infrastructure/container component that asks for it. Terraform, Docker, and
+  Kubernetes files are allowed inside `infrastructure` services.
 - Each service must run with its standard local dev command after `npm install`
   / `pip install` etc. Document the dev command in the per-service README.
 - Honor exact component versions when the spec specifies a `version` field.
@@ -34,6 +36,7 @@ local dev command (e.g., `npm run dev`, `uvicorn main:app --reload`).
   root with no group prefix.
 - **Services** become directories with their own dependency manifest
   (package.json, pyproject.toml, go.mod, etc.) and an entry-point file.
+  `infrastructure` services become IaC workspaces instead of app runtimes.
 - **Components** are libraries / frameworks / languages installed inside a
   service. Use the canonical install command for the ecosystem (`npm install`,
   `pip install`, `go get`).
@@ -80,6 +83,29 @@ spec specifies non-default ports / configs.
 Emit no source files unless the spec specifies broker config. Emit broker
 config as `rabbitmq.conf` (or equivalent) when port / vhost differs from
 defaults.
+
+### `infrastructure`
+Emit a Terraform/OpenTofu workspace. Always include `versions.tf`,
+`providers.tf`, `main.tf`, `variables.tf`, `outputs.tf`, and
+`terraform.tfvars.example` when Terraform is present. If the service includes
+AWS/Azure/GCP provider components, configure the corresponding provider and
+variables. If it includes `docker-provider`, emit `containers.tf` describing
+container images, networks, ports, and environment variables for the app
+services in the spec. If it includes `kubernetes-provider`, emit
+`kubernetes.tf` with Deployment/Service/Ingress resources as Terraform-managed
+Kubernetes resources. Do not run `terraform init`, `terraform plan`, or
+provider downloads.
+
+For AWS infrastructure components (`aws-*`), create idiomatic Terraform
+resource blocks in the named file contract. Use each component's `config`
+object, especially `integrationPatterns`, as the intended wiring map. Model
+ECS, Lambda, API Gateway, ALB, ECR, IAM, VPC, S3, CloudFront, Route 53/ACM,
+RDS, DynamoDB, ElastiCache, SQS, SNS, EventBridge, Step Functions, Cognito,
+Secrets Manager, SSM Parameters, CloudWatch, WAF, KMS, EKS, App Runner,
+Amplify, SES, and Bedrock only when their catalog components are present.
+Prefer least-privilege IAM, private subnets for compute/data, outputs for
+cross-service values, and variables for names, regions, domains, image tags,
+and environment-specific values.
 
 ### `sidecar`
 Emit a minimal observability scaffold (e.g., `otel-collector.yaml`) — usually
@@ -138,6 +164,47 @@ For every edge `from → to` with the given protocol, emit BOTH ends:
 - On the `from` side: a small `read(path)` / `write(path, data)` helper
   rooted at the spec's `mountPath`. Use Node's `fs/promises` or Python's
   `pathlib`.
+
+### `event`
+- On the `from` side: publish a typed event to the named event bus/source.
+- On the `to` side: add a handler target such as Lambda, SQS, SNS, Step
+  Functions, or an ECS task based on the target service/component.
+
+### `object-storage`
+- On the `from` side: add helpers for presigned uploads/downloads or object
+  notifications using the `bucket` and `prefix` fields.
+- On the `to` side: model bucket policy, notification, or processing stubs.
+
+### `identity`
+- On the `from` side: add token acquisition/validation client setup using
+  `provider` and `scopes`.
+- On the `to` side: model the authorizer, user pool, identity provider, or
+  route protection expected by the target component.
+
+### `secret`
+- On the `from` side: add a helper to read named runtime secrets/config.
+- On the `to` side: model the secret or parameter namespace and IAM grants.
+
+### `container-image`
+- On the `from` side: document build/push image name and tag.
+- On the `to` side: wire the repository/tag into ECS, Lambda container image,
+  App Runner, EKS, or Kubernetes workloads.
+
+### `lambda-invoke`
+- Treat this as an AWS service integration, commonly API Gateway invoking a
+  Lambda function through Lambda permissions / resource policies, not as a
+  normal HTTP call to the function.
+- On the `from` side: model the invoking service route/integration, including
+  `endpointVisibility` (`public` or `private`) and `authorizer` if present.
+- On the `to` side: model the Lambda function, alias/version `qualifier`, and
+  `aws_lambda_permission` or equivalent IAM grant for the invoker. Use
+  `invocationType=request-response` for synchronous API routes and
+  `invocationType=event` for asynchronous fire-and-forget triggers.
+
+### `dns`
+- On the `from` side: treat the domain as the public route/caller.
+- On the `to` side: model Route 53/ACM/CloudFront/API Gateway/ALB records and
+  certificate attachment using `domainName` and `recordType`.
 
 ## Repo-Wide Files
 

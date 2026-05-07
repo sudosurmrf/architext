@@ -137,6 +137,37 @@ export function instantiatePattern(
       case "fs":
         return { id, from, to, protocol: "fs",
           ...(e.mountPath !== undefined ? { mountPath: e.mountPath } : {}) };
+      case "event":
+        return { id, from, to, protocol: "event",
+          ...(e.eventBus !== undefined ? { eventBus: e.eventBus } : {}),
+          ...(e.source !== undefined ? { source: e.source } : {}),
+          ...(e.detailType !== undefined ? { detailType: e.detailType } : {}) };
+      case "object-storage":
+        return { id, from, to, protocol: "object-storage",
+          ...(e.bucket !== undefined ? { bucket: e.bucket } : {}),
+          ...(e.prefix !== undefined ? { prefix: e.prefix } : {}) };
+      case "identity":
+        return { id, from, to, protocol: "identity",
+          ...(e.provider !== undefined ? { provider: e.provider } : {}),
+          ...(e.scopes !== undefined ? { scopes: e.scopes } : {}) };
+      case "secret":
+        return { id, from, to, protocol: "secret",
+          ...(e.namespace !== undefined ? { namespace: e.namespace } : {}) };
+      case "container-image":
+        return { id, from, to, protocol: "container-image",
+          ...(e.repository !== undefined ? { repository: e.repository } : {}),
+          ...(e.tag !== undefined ? { tag: e.tag } : {}) };
+      case "lambda-invoke":
+        return { id, from, to, protocol: "lambda-invoke",
+          ...(e.functionName !== undefined ? { functionName: e.functionName } : {}),
+          ...(e.invocationType !== undefined ? { invocationType: e.invocationType } : {}),
+          ...(e.qualifier !== undefined ? { qualifier: e.qualifier } : {}),
+          ...(e.endpointVisibility !== undefined ? { endpointVisibility: e.endpointVisibility } : {}),
+          ...(e.authorizer !== undefined ? { authorizer: e.authorizer } : {}) };
+      case "dns":
+        return { id, from, to, protocol: "dns",
+          ...(e.domainName !== undefined ? { domainName: e.domainName } : {}),
+          ...(e.recordType !== undefined ? { recordType: e.recordType } : {}) };
     }
   });
 

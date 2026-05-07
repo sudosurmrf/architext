@@ -172,4 +172,65 @@ describe("computeFileTree", () => {
     expect(reqOccurrences).toBe(1);
     expect(tree.paths).toEqual([...tree.paths].sort());
   });
+
+  it("emits Terraform infrastructure files", () => {
+    const spec: ArchitextSpec = {
+      ...baseSpec,
+      services: [
+        {
+          id: "infra",
+          name: "infra",
+          kind: "infrastructure",
+          position: { x: 0, y: 0 },
+          components: [
+            { id: "terraform", category: "infrastructure" },
+            { id: "docker-provider", category: "infrastructure" },
+          ],
+        },
+      ],
+    };
+    const tree = computeFileTree(spec, catalog);
+    expect(tree.paths).toContain("infra/main.tf");
+    expect(tree.paths).toContain("infra/providers.tf");
+    expect(tree.paths).toContain("infra/containers.tf");
+    expect(tree.byService.infra).toEqual(
+      expect.arrayContaining(["infra/containers.tf", "infra/main.tf", "infra/providers.tf"]),
+    );
+  });
+
+  it("emits AWS infrastructure files from selected service components", () => {
+    const spec: ArchitextSpec = {
+      ...baseSpec,
+      services: [
+        {
+          id: "infra",
+          name: "infra",
+          kind: "infrastructure",
+          position: { x: 0, y: 0 },
+          components: [
+            { id: "aws-provider", category: "infrastructure" },
+            { id: "aws-vpc-networking", category: "infrastructure" },
+            { id: "aws-ecr", category: "infrastructure" },
+            { id: "aws-ecs-fargate", category: "infrastructure" },
+            { id: "aws-lambda", category: "infrastructure" },
+            { id: "aws-api-gateway", category: "infrastructure" },
+            { id: "aws-iam", category: "infrastructure" },
+          ],
+        },
+      ],
+    };
+    const tree = computeFileTree(spec, catalog);
+    expect(tree.paths).toEqual(
+      expect.arrayContaining([
+        "infra/providers.tf",
+        "infra/network.tf",
+        "infra/ecr.tf",
+        "infra/ecs.tf",
+        "infra/lambda.tf",
+        "infra/api-gateway.tf",
+        "infra/iam.tf",
+        "infra/logs.tf",
+      ]),
+    );
+  });
 });

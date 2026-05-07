@@ -55,6 +55,22 @@ const PartialEdge = z
     database: z.string().optional(),
     namespace: z.string().optional(),
     mountPath: z.string().optional(),
+    eventBus: z.string().optional(),
+    source: z.string().optional(),
+    detailType: z.string().optional(),
+    bucket: z.string().optional(),
+    prefix: z.string().optional(),
+    provider: z.string().optional(),
+    scopes: z.array(z.string().min(1)).optional(),
+    repository: z.string().optional(),
+    tag: z.string().optional(),
+    functionName: z.string().optional(),
+    invocationType: z.enum(["request-response", "event"]).optional(),
+    qualifier: z.string().optional(),
+    endpointVisibility: z.enum(["public", "private"]).optional(),
+    authorizer: z.string().optional(),
+    domainName: z.string().optional(),
+    recordType: z.string().optional(),
   })
   .strict();
 

@@ -8,6 +8,7 @@
 
 import type { ReactFlowInstance } from "@xyflow/react";
 import type { ArchitextSpec } from "@architext/schema";
+import type { Component } from "@architext/schema";
 import { instantiatePattern, loadPatterns } from "@architext/patterns";
 import type { DragItem, DropTarget } from "../types/drag";
 import { canDrop } from "../lib/can-drop";
@@ -24,6 +25,22 @@ type SpecDispatch = Pick<
   SpecState,
   "addGroup" | "addService" | "addComponent" | "addEdge"
 >;
+
+function componentFromDragItem(
+  item: DragItem & { catalogId: string; category: Component["category"] },
+): Component {
+  const component: Component = {
+    id: item.catalogId,
+    category: item.category,
+  };
+  if ("defaultVersion" in item && item.defaultVersion !== undefined) {
+    component.version = item.defaultVersion;
+  }
+  if ("defaultConfig" in item && item.defaultConfig !== undefined) {
+    component.config = item.defaultConfig;
+  }
+  return component;
+}
 
 /**
  * Determine the DropTarget using the DOM element under the cursor.
@@ -145,7 +162,10 @@ export function handleCanvasDrop(
         name: dragItem.name,
         kind: dragItem.serviceKind,
         position: servicePos,
-        components: [],
+        components:
+          dragItem.catalogId && dragItem.category
+            ? [componentFromDragItem({ ...dragItem, catalogId: dragItem.catalogId, category: dragItem.category })]
+            : [],
         groupId,
       });
       return { dropped: true };
@@ -156,8 +176,7 @@ export function handleCanvasDrop(
         return { dropped: false, message: "Components must be dropped on a service" };
       }
       dispatch.addComponent(target.serviceId, {
-        id: dragItem.catalogId,
-        category: dragItem.category,
+        ...componentFromDragItem(dragItem),
       });
       return { dropped: true };
     }

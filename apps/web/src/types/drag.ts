@@ -30,6 +30,9 @@ export interface ServiceToken {
   readonly name: string;
   /** Catalog entry id, e.g. "postgres" — used when the service is created from a datastore entry */
   readonly catalogId?: string;
+  readonly category?: ComponentCategory;
+  readonly defaultVersion?: string;
+  readonly defaultConfig?: Record<string, unknown>;
 }
 
 export interface ComponentChip {
@@ -37,6 +40,8 @@ export interface ComponentChip {
   readonly catalogId: string;
   readonly category: ComponentCategory;
   readonly name: string;
+  readonly defaultVersion?: string;
+  readonly defaultConfig?: Record<string, unknown>;
 }
 
 export interface PatternDrop {

@@ -144,6 +144,22 @@ describe("canDrop — component-chip", () => {
     const result = canDrop(pgComponent, inService, spec);
     expect(result.allowed).toBe(true);
   });
+
+  it("allows infrastructure components inside infrastructure services", () => {
+    const terraform: DragItem = {
+      type: "component-chip",
+      catalogId: "terraform",
+      category: "infrastructure",
+      name: "Terraform",
+    };
+    const spec = makeSpec({
+      services: [
+        { id: "s1", name: "infra", kind: "infrastructure", position: { x: 0, y: 0 }, components: [] },
+      ],
+    });
+    const result = canDrop(terraform, inService, spec);
+    expect(result.allowed).toBe(true);
+  });
 });
 
 describe("canDrop — pattern", () => {

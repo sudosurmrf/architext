@@ -3,7 +3,7 @@ import { GroupKindSchema, GroupSchema } from "../src/group";
 
 describe("GroupKindSchema", () => {
   it("accepts each documented kind", () => {
-    const kinds = ["frontend", "backend", "data", "workers", "external", "sidecars", "custom"];
+    const kinds = ["frontend", "backend", "data", "workers", "external", "infrastructure", "sidecars", "custom"];
     for (const k of kinds) {
       expect(GroupKindSchema.safeParse(k).success).toBe(true);
     }
@@ -31,6 +31,11 @@ describe("GroupSchema", () => {
   it("accepts optional network field", () => {
     const result = GroupSchema.parse({ ...valid, network: "private" });
     expect(result.network).toBe("private");
+  });
+
+  it("accepts optional description", () => {
+    const result = GroupSchema.parse({ ...valid, description: "Private backend tier." });
+    expect(result.description).toBe("Private backend tier.");
   });
 
   it("rejects unknown network values", () => {

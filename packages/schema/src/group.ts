@@ -15,6 +15,7 @@ export const GroupKindSchema = z.enum([
   "data",
   "workers",
   "external",
+  "infrastructure",
   "sidecars",
   "custom",
 ]);
@@ -26,6 +27,7 @@ export type GroupNetwork = z.infer<typeof GroupNetworkSchema>;
 export const GroupSchema = z.object({
   id: IdSchema,
   name: z.string().min(1),
+  description: z.string().optional(),
   kind: GroupKindSchema,
   serviceIds: z
     .array(IdSchema)

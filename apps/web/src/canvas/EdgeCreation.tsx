@@ -29,6 +29,13 @@ const PROTOCOLS: readonly ProtocolOption[] = [
   { value: "sql",       label: "SQL",       description: "SQL database wire",      color: "border-indigo-300 hover:bg-indigo-50" },
   { value: "key-value", label: "Key-Value", description: "KV store protocol",      color: "border-teal-300 hover:bg-teal-50" },
   { value: "fs",        label: "FS",        description: "Filesystem / volume",    color: "border-gray-300 hover:bg-gray-50" },
+  { value: "event",     label: "Event",     description: "Event bus / rules",      color: "border-purple-300 hover:bg-purple-50" },
+  { value: "object-storage", label: "Object", description: "S3/object storage",   color: "border-cyan-300 hover:bg-cyan-50" },
+  { value: "identity",  label: "Identity",  description: "Auth / identity flow",   color: "border-emerald-300 hover:bg-emerald-50" },
+  { value: "secret",    label: "Secret",    description: "Secrets/config access",  color: "border-red-300 hover:bg-red-50" },
+  { value: "container-image", label: "Image", description: "Container image flow", color: "border-violet-300 hover:bg-violet-50" },
+  { value: "lambda-invoke", label: "Lambda", description: "API Gateway invokes Lambda", color: "border-fuchsia-300 hover:bg-fuchsia-50" },
+  { value: "dns",       label: "DNS",       description: "Domain / record target", color: "border-sky-300 hover:bg-sky-50" },
 ] as const;
 
 // ─── Pending connection state ──────────────────────────────────────────
@@ -193,6 +200,78 @@ export function useEdgeCreation(): EdgeCreationState {
             mountPath: "./data",
           };
           break;
+        case "event":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            eventBus: "default",
+            source: "app",
+            detailType: "domain.event",
+          };
+          break;
+        case "object-storage":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            bucket: "app-bucket",
+            prefix: "/",
+          };
+          break;
+        case "identity":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            provider: "cognito",
+            scopes: ["openid", "email", "profile"],
+          };
+          break;
+        case "secret":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            namespace: "app",
+          };
+          break;
+        case "container-image":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            repository: "app",
+            tag: "latest",
+          };
+          break;
+        case "lambda-invoke":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            functionName: "handler",
+            invocationType: "request-response",
+            endpointVisibility: "private",
+            authorizer: "iam",
+          };
+          break;
+        case "dns":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            domainName: "app.example.com",
+            recordType: "A",
+          };
+          break;
         default:
           protocol satisfies never;
           return;
@@ -269,13 +348,13 @@ export function EdgeCreationModal({
       onClick={onCancel}
     >
       <div
-        className="w-96 rounded-xl bg-white p-6 shadow-xl"
+        className="w-[520px] rounded-xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
           What kind of connection?
         </h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {PROTOCOLS.map((p) => {
             const duplicate = isDuplicate(p.value);
             return (

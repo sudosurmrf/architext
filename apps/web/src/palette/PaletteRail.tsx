@@ -13,6 +13,8 @@ import {
   BookOpen,
   Wrench,
   HardDrive,
+  CloudCog,
+  Cloud,
   Shield,
   Play,
   type LucideIcon,
@@ -27,6 +29,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   BookOpen,
   Wrench,
   HardDrive,
+  CloudCog,
+  Cloud,
   Shield,
   Play,
 };
