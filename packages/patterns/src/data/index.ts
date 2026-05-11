@@ -12,6 +12,11 @@ import { frontendBackendDb } from "./frontend-backend-db";
 import { workerQueue } from "./worker-queue";
 import { cachedApi } from "./cached-api";
 import { microservicesSkeleton } from "./microservices-skeleton";
+import { ragPipeline } from "./rag-pipeline";
+import { humanInTheLoop } from "./human-in-the-loop";
+import { multiAgentOrchestrator } from "./multi-agent-orchestrator";
+import { toolUsingAgentFallback } from "./tool-using-agent-fallback";
+import { autonomousAgentLoop } from "./autonomous-agent-loop";
 
 export const allPatterns: readonly Pattern[] = Object.freeze([
   restApiWithDb,
@@ -19,4 +24,9 @@ export const allPatterns: readonly Pattern[] = Object.freeze([
   workerQueue,
   cachedApi,
   microservicesSkeleton,
+  ragPipeline,
+  humanInTheLoop,
+  multiAgentOrchestrator,
+  toolUsingAgentFallback,
+  autonomousAgentLoop,
 ]);
