@@ -9,3 +9,4 @@ export * from "./types";
 export * from "./compile";
 export * from "./format";
 export * from "./validate";
+export * from "./rule-engine";

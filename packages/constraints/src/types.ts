@@ -131,9 +131,19 @@ export interface ArchitextWorkflowManifest {
   readonly expectedFiles: readonly string[];
 }
 
+export interface DiagnosticLocation {
+  readonly serviceId?: string;
+  readonly edgeId?: string;
+  readonly groupId?: string;
+  readonly componentId?: string;
+}
+
 export interface ConstraintDiagnostic {
   readonly severity: "error" | "warning" | "info";
   readonly code: string;
   readonly message: string;
+  readonly location?: DiagnosticLocation;
+  readonly suggestion?: string;
+  /** @deprecated Use `location` instead */
   readonly path?: string;
 }
