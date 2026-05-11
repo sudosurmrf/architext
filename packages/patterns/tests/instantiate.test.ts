@@ -107,6 +107,8 @@ describe("instantiatePattern", () => {
           { from: "api", to: "infra", protocol: "secret", namespace: "app" },
           { from: "api", to: "infra", protocol: "container-image", repository: "api", tag: "latest" },
           { from: "api", to: "infra", protocol: "lambda-invoke", functionName: "handler", invocationType: "request-response", endpointVisibility: "private", authorizer: "iam" },
+          { from: "api", to: "infra", protocol: "human-review", reviewType: "approval", assignee: "ops", sla: "4h", instructions: "Approve if safe." },
+          { from: "api", to: "infra", protocol: "decision", condition: "confidence >= 0.8", branchLabel: "approved", fallback: false },
           { from: "api", to: "infra", protocol: "dns", domainName: "app.example.com", recordType: "A" },
         ],
       },
@@ -114,7 +116,7 @@ describe("instantiatePattern", () => {
     let n = 0;
     const result = instantiatePattern(cloudPattern, { x: 0, y: 0 }, () => `id-${++n}`);
 
-    expect(result.edges).toHaveLength(7);
+    expect(result.edges).toHaveLength(9);
     expect(result.edges).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ protocol: "event", eventBus: "app", source: "api", detailType: "created" }),
@@ -123,6 +125,8 @@ describe("instantiatePattern", () => {
         expect.objectContaining({ protocol: "secret", namespace: "app" }),
         expect.objectContaining({ protocol: "container-image", repository: "api", tag: "latest" }),
         expect.objectContaining({ protocol: "lambda-invoke", functionName: "handler", invocationType: "request-response", endpointVisibility: "private", authorizer: "iam" }),
+        expect.objectContaining({ protocol: "human-review", reviewType: "approval", assignee: "ops", sla: "4h", instructions: "Approve if safe." }),
+        expect.objectContaining({ protocol: "decision", condition: "confidence >= 0.8", branchLabel: "approved", fallback: false }),
         expect.objectContaining({ protocol: "dns", domainName: "app.example.com", recordType: "A" }),
       ]),
     );

@@ -17,6 +17,9 @@ importers:
       '@architext/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
+      '@architext/constraints':
+        specifier: workspace:*
+        version: link:../../packages/constraints
       '@architext/files-engine':
         specifier: workspace:*
         version: link:../../packages/files-engine
@@ -106,6 +109,9 @@ importers:
       '@architext/catalog':
         specifier: workspace:*
         version: link:../catalog
+      '@architext/constraints':
+        specifier: workspace:*
+        version: link:../constraints
       '@architext/files-engine':
         specifier: workspace:*
         version: link:../files-engine
@@ -128,6 +134,28 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.39
+      tsup:
+        specifier: ^8.0.2
+        version: 8.5.1(jiti@1.21.7)(postcss@8.5.14)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@20.19.39)(jsdom@24.1.3)
+
+  packages/constraints:
+    dependencies:
+      '@architext/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@architext/files-engine':
+        specifier: workspace:*
+        version: link:../files-engine
+      '@architext/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
       tsup:
         specifier: ^8.0.2
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.14)(typescript@5.9.3)

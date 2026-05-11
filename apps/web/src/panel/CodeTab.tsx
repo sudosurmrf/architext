@@ -19,6 +19,7 @@ import {
 } from "../lib/code-preview";
 import type { Service, Edge } from "@architext/schema";
 import type { Highlighter } from "shiki";
+import { buildWorkflowContractPreview } from "../lib/workflow-contract";
 
 // ─── Shiki singleton (same pattern as SpecTab) ──────────────────────────────
 
@@ -255,6 +256,7 @@ function ServiceCard({ service, relatedEdges, apiKey }: ServiceCardProps) {
 // ─── Main CodeTab ───────────────────────────────────────────────────────────
 
 export function CodeTab() {
+  const spec = useSpecStore((s) => s.spec);
   const services = useSpecStore((s) => s.spec.services);
   const edges = useSpecStore((s) => s.spec.edges);
 
@@ -269,6 +271,7 @@ export function CodeTab() {
     },
     [],
   );
+  const workflowPreview = useMemo(() => buildWorkflowContractPreview(spec), [spec]);
 
   // Map each service to its related edges
   const serviceEdges = useMemo(() => {
@@ -281,14 +284,6 @@ export function CodeTab() {
     }
     return map;
   }, [services, edges]);
-
-  if (services.length === 0) {
-    return (
-      <div className="p-4 text-sm text-gray-500">
-        Add services to preview code generation.
-      </div>
-    );
-  }
 
   return (
     <div className="p-3 space-y-3">
@@ -337,18 +332,54 @@ export function CodeTab() {
         </div>
       )}
 
+      <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-indigo-950">Workflow Contract</h3>
+          <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-indigo-700">
+            {workflowPreview.completenessScore}% complete
+          </span>
+        </div>
+        <div className="mb-2 grid grid-cols-4 gap-1 text-center text-xs">
+          <div className="rounded-md bg-white px-1 py-1">
+            <div className="font-semibold text-gray-800">{workflowPreview.manifest.nodes.length}</div>
+            <div className="text-gray-500">nodes</div>
+          </div>
+          <div className="rounded-md bg-white px-1 py-1">
+            <div className="font-semibold text-gray-800">{workflowPreview.manifest.agents.length}</div>
+            <div className="text-gray-500">agents</div>
+          </div>
+          <div className="rounded-md bg-white px-1 py-1">
+            <div className="font-semibold text-gray-800">{workflowPreview.manifest.decisions.length}</div>
+            <div className="text-gray-500">branches</div>
+          </div>
+          <div className="rounded-md bg-white px-1 py-1">
+            <div className="font-semibold text-gray-800">{workflowPreview.manifest.humanGates.length}</div>
+            <div className="text-gray-500">gates</div>
+          </div>
+        </div>
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-white p-2 font-mono text-xs leading-relaxed text-gray-700">
+          {workflowPreview.json}
+        </pre>
+      </div>
+
       {/* Service cards */}
       <h3 className="text-sm font-medium text-gray-700">Agent Briefs</h3>
-      <div className="space-y-2">
-        {services.map((svc) => (
-          <ServiceCard
-            key={svc.id}
-            service={svc}
-            relatedEdges={serviceEdges.get(svc.id) ?? []}
-            apiKey={apiKey}
-          />
-        ))}
-      </div>
+      {services.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-500">
+          Add services to preview code generation.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {services.map((svc) => (
+            <ServiceCard
+              key={svc.id}
+              service={svc}
+              relatedEdges={serviceEdges.get(svc.id) ?? []}
+              apiKey={apiKey}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

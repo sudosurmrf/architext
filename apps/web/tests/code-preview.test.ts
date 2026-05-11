@@ -119,13 +119,15 @@ describe("buildServicePrompt", () => {
     expect(prompt).toContain("tag=latest");
   });
 
-  it("formats object storage, identity, event, lambda invoke, secret, and dns edges", () => {
+  it("formats object storage, identity, event, lambda invoke, human review, decision, secret, and dns edges", () => {
     const service = makeService();
     const edges = [
       makeEdge({ id: "event", protocol: "event", eventBus: "app", detailType: "created" } as Edge),
       makeEdge({ id: "object", protocol: "object-storage", bucket: "assets", prefix: "uploads/" } as Edge),
       makeEdge({ id: "identity", protocol: "identity", provider: "cognito", scopes: ["openid"] } as Edge),
       makeEdge({ id: "lambda", protocol: "lambda-invoke", functionName: "handler", invocationType: "request-response", endpointVisibility: "private", authorizer: "iam" } as Edge),
+      makeEdge({ id: "human", protocol: "human-review", reviewType: "approval", assignee: "ops", sla: "4h" } as Edge),
+      makeEdge({ id: "decision", protocol: "decision", condition: "confidence >= 0.8", branchLabel: "approved", fallback: false } as Edge),
       makeEdge({ id: "secret", protocol: "secret", namespace: "app" } as Edge),
       makeEdge({ id: "dns", protocol: "dns", domainName: "app.example.com", recordType: "A" } as Edge),
     ];
@@ -137,6 +139,8 @@ describe("buildServicePrompt", () => {
     expect(prompt).toContain("provider=cognito");
     expect(prompt).toContain("function=handler");
     expect(prompt).toContain("endpoint=private");
+    expect(prompt).toContain("review=approval");
+    expect(prompt).toContain("branch=approved");
     expect(prompt).toContain("namespace=app");
     expect(prompt).toContain("domain=app.example.com");
   });
@@ -144,6 +148,16 @@ describe("buildServicePrompt", () => {
   it("includes service descriptions and payload contracts", () => {
     const service = makeService({
       description: "Owns task creation.",
+      businessContext: {
+        purpose: "Turn user-entered tasks into durable work items.",
+      },
+      components: [
+        {
+          id: "comp-ts",
+          category: "language",
+          businessContext: { purpose: "Keep request and response types explicit." },
+        },
+      ],
       contracts: [
         {
           id: "edge-http-inbound",
@@ -152,16 +166,38 @@ describe("buildServicePrompt", () => {
           direction: "inbound",
           contentType: "application/json",
           schema: '{ "title": "string" }',
+          businessContext: {
+            inputs: ["Task title and optional due date"],
+            acceptanceCriteria: ["Reject empty task titles"],
+          },
         },
       ],
     });
-    const edge = makeEdge({ id: "edge-http", from: "svc-web", to: "svc-api" });
-    const spec = makeSpec({ services: [service], edges: [edge] });
+    const edge = makeEdge({
+      id: "edge-http",
+      from: "svc-web",
+      to: "svc-api",
+      businessContext: { purpose: "Submit task creation requests from the UI." },
+    });
+    const spec = makeSpec({
+      project: {
+        name: "TestProject",
+        slug: "test-project",
+        businessContext: { purpose: "Coordinate work intake." },
+      },
+      services: [service],
+      edges: [edge],
+    });
     const prompt = buildServicePrompt(service, [edge], spec);
 
     expect(prompt).toContain("Owns task creation.");
+    expect(prompt).toContain("Coordinate work intake.");
+    expect(prompt).toContain("Turn user-entered tasks into durable work items.");
+    expect(prompt).toContain("Keep request and response types explicit.");
+    expect(prompt).toContain("Submit task creation requests from the UI.");
     expect(prompt).toContain("Create task request");
     expect(prompt).toContain('{ "title": "string" }');
+    expect(prompt).toContain("Reject empty task titles");
   });
 });
 
@@ -228,5 +264,14 @@ describe("cacheKey", () => {
     const edges1 = [makeEdge({ port: 3000 } as Edge)];
     const edges2 = [makeEdge({ port: 8080 } as Edge)];
     expect(cacheKey(service, edges1)).not.toBe(cacheKey(service, edges2));
+  });
+
+  it("changes when business context changes", () => {
+    const service1 = makeService();
+    const service2 = makeService({
+      businessContext: { purpose: "Own task writes." },
+    });
+    const edges = [makeEdge()];
+    expect(cacheKey(service1, edges)).not.toBe(cacheKey(service2, edges));
   });
 });

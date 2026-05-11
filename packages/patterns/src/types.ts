@@ -69,6 +69,13 @@ const PartialEdge = z
     qualifier: z.string().optional(),
     endpointVisibility: z.enum(["public", "private"]).optional(),
     authorizer: z.string().optional(),
+    reviewType: z.enum(["approval", "edit", "evaluation", "escalation"]).optional(),
+    assignee: z.string().optional(),
+    sla: z.string().optional(),
+    instructions: z.string().optional(),
+    condition: z.string().optional(),
+    branchLabel: z.string().optional(),
+    fallback: z.boolean().optional(),
     domainName: z.string().optional(),
     recordType: z.string().optional(),
   })

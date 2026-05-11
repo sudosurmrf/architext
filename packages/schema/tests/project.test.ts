@@ -13,9 +13,11 @@ describe("ProjectMetaSchema", () => {
       name: "My App",
       slug: "my-app",
       description: "An app.",
+      businessContext: { purpose: "Help users track work.", businessRules: ["Tasks belong to one owner"] },
       defaultBranch: "main",
     });
     expect(result.description).toBe("An app.");
+    expect(result.businessContext?.purpose).toBe("Help users track work.");
     expect(result.defaultBranch).toBe("main");
   });
 

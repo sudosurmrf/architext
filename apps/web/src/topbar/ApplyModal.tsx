@@ -12,6 +12,7 @@ import { useSpecStore } from "../store/spec-store";
 import { prepareForExport } from "../lib/export-spec";
 import { computeFileTree } from "@architext/files-engine";
 import { loadCatalog } from "@architext/catalog";
+import { buildWorkflowContractPreview } from "../lib/workflow-contract";
 
 export interface ApplyModalProps {
   open: boolean;
@@ -55,6 +56,7 @@ export function ApplyModal({ open, onClose }: ApplyModalProps) {
     () => computeFileTree(exportedSpec, loadCatalog()).paths.length,
     [exportedSpec],
   );
+  const workflowPreview = useMemo(() => buildWorkflowContractPreview(spec), [spec]);
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -92,6 +94,24 @@ export function ApplyModal({ open, onClose }: ApplyModalProps) {
           <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-2">
             <div className="font-semibold text-gray-800">{predictedFileCount}</div>
             <div className="text-gray-500">files</div>
+          </div>
+        </div>
+        <div className="mb-4 grid grid-cols-4 gap-2 text-center text-xs">
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-2">
+            <div className="font-semibold text-indigo-900">{workflowPreview.manifest.nodes.length}</div>
+            <div className="text-indigo-700">workflow</div>
+          </div>
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-2">
+            <div className="font-semibold text-indigo-900">{workflowPreview.manifest.decisions.length}</div>
+            <div className="text-indigo-700">decisions</div>
+          </div>
+          <div className="rounded-lg border border-rose-100 bg-rose-50 px-2 py-2">
+            <div className="font-semibold text-rose-900">{workflowPreview.manifest.humanGates.length}</div>
+            <div className="text-rose-700">gates</div>
+          </div>
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-2 py-2">
+            <div className="font-semibold text-emerald-900">{workflowPreview.completenessScore}%</div>
+            <div className="text-emerald-700">complete</div>
           </div>
         </div>
 

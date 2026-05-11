@@ -34,6 +34,8 @@ describe("SpecFragmentSchema", () => {
         { from: "api", to: "infra", protocol: "event", eventBus: "app", detailType: "created" },
         { from: "api", to: "infra", protocol: "container-image", repository: "api", tag: "latest" },
         { from: "api", to: "infra", protocol: "lambda-invoke", functionName: "handler", endpointVisibility: "private" },
+        { from: "api", to: "infra", protocol: "human-review", reviewType: "approval", assignee: "ops" },
+        { from: "api", to: "infra", protocol: "decision", condition: "confidence >= 0.8", branchLabel: "approved" },
         { from: "api", to: "infra", protocol: "dns", domainName: "app.example.com", recordType: "A" },
       ],
     };

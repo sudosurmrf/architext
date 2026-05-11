@@ -12,6 +12,10 @@ describe("ServiceKindSchema", () => {
       "queue",
       "infrastructure",
       "sidecar",
+      "ai-model",
+      "ai-agent",
+      "human-step",
+      "decision",
       "external-api",
     ];
     for (const k of kinds) {
@@ -45,6 +49,7 @@ describe("ServiceSchema", () => {
     const result = ServiceSchema.parse({
       ...valid,
       description: "Public API for the app.",
+      businessContext: { purpose: "Validate and persist task requests." },
       contracts: [
         {
           id: "edge1-outbound",
@@ -53,11 +58,14 @@ describe("ServiceSchema", () => {
           direction: "outbound",
           contentType: "application/json",
           schema: '{ "title": "string" }',
+          businessContext: { purpose: "Represents a user-created task." },
         },
       ],
     });
     expect(result.description).toBe("Public API for the app.");
+    expect(result.businessContext?.purpose).toBe("Validate and persist task requests.");
     expect(result.contracts?.[0]?.schema).toContain("title");
+    expect(result.contracts?.[0]?.businessContext?.purpose).toContain("task");
   });
 
   it("rejects empty name", () => {

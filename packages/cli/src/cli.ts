@@ -48,8 +48,12 @@ export async function runCli(argv: readonly string[]): Promise<number> {
     .option("-i, --instructions <text>", "extra instructions appended to the prompt")
     .option("--dry-run", "print the assembled prompt and exit", false)
     .option("--force", "overwrite the target directory if it exists", false)
-    .action(async (spec: string, opts: { agent: string; instructions?: string; dryRun: boolean; force: boolean }) => {
+    .option("--workflow-runtime <runtime>", "workflow runtime adapter (auto|none|langgraph-ts)", "auto")
+    .action(async (spec: string, opts: { agent: string; instructions?: string; dryRun: boolean; force: boolean; workflowRuntime: "auto" | "none" | "langgraph-ts" }) => {
       try {
+        if (!["auto", "none", "langgraph-ts"].includes(opts.workflowRuntime)) {
+          throw new ApplyError(ExitCode.Generic, `unknown workflow runtime: ${opts.workflowRuntime}`);
+        }
         const backend = selectBackend(opts.agent);
         exitCode = await runApply({
           specPath: spec,
@@ -58,6 +62,7 @@ export async function runCli(argv: readonly string[]): Promise<number> {
           instructions: opts.instructions,
           dryRun: opts.dryRun,
           force: opts.force,
+          workflowRuntime: opts.workflowRuntime,
           write,
         });
       } catch (err) {

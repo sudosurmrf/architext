@@ -19,6 +19,8 @@ export type PaletteCategory =
   | "datastores"
   | "infrastructure"
   | "aws"
+  | "ai"
+  | "workflow"
   | "auth"
   | "entry-points";
 

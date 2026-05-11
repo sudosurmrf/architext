@@ -34,6 +34,8 @@ const PROTOCOL_COLORS: Record<string, { stroke: string; bg: string; text: string
   secret:      { stroke: "#ef4444", bg: "#fee2e2", text: "#b91c1c" },
   "container-image": { stroke: "#8b5cf6", bg: "#ede9fe", text: "#6d28d9" },
   "lambda-invoke": { stroke: "#d946ef", bg: "#fae8ff", text: "#a21caf" },
+  "human-review": { stroke: "#f43f5e", bg: "#ffe4e6", text: "#be123c" },
+  decision:    { stroke: "#4f46e5", bg: "#e0e7ff", text: "#3730a3" },
   dns:         { stroke: "#0ea5e9", bg: "#e0f2fe", text: "#0369a1" },
 };
 
@@ -53,6 +55,8 @@ const PROTOCOL_LABELS: Record<string, string> = {
   secret: "Secret",
   "container-image": "Image",
   "lambda-invoke": "Lambda",
+  "human-review": "Human",
+  decision: "Decision",
   dns: "DNS",
 };
 

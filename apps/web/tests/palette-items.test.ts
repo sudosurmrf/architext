@@ -35,4 +35,19 @@ describe("palette items", () => {
     expect(items.map((item) => item.id)).not.toContain("aws-ecs-fargate");
     expect(items.map((item) => item.id)).toContain("terraform");
   });
+
+  it("shows AI and workflow nodes as service-level building blocks", () => {
+    const catalog = loadCatalog();
+    const aiItems = getItemsForCategory("ai", catalog, []);
+    const workflowItems = getItemsForCategory("workflow", catalog, []);
+
+    expect(aiItems.map((item) => item.id)).toEqual(
+      expect.arrayContaining(["ai-agent-service", "openai-gpt-4o", "anthropic-claude-sonnet", "meta-llama"]),
+    );
+    expect(workflowItems.map((item) => item.id)).toEqual(
+      expect.arrayContaining(["human-approval-step", "decision-router"]),
+    );
+    expect(aiItems.find((item) => item.id === "ai-agent-service")?.dragItem.type).toBe("service-token");
+    expect(workflowItems.find((item) => item.id === "human-approval-step")?.dragItem.type).toBe("service-token");
+  });
 });

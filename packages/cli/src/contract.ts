@@ -11,10 +11,20 @@ import { join, relative } from "node:path";
 import type { ArchitextSpec } from "@architext/schema";
 import { loadCatalog } from "@architext/catalog";
 import { computeFileTree } from "@architext/files-engine";
+import {
+  compileWorkflowManifest,
+  formatWorkflowManifest,
+  validateWorkflowManifest,
+  type ArchitextWorkflowManifest,
+  type ConstraintDiagnostic,
+  type WorkflowRuntime,
+} from "@architext/constraints";
 
 export interface ScaffoldContract {
   readonly expectedPaths: readonly string[];
   readonly byService: Readonly<Record<string, readonly string[]>>;
+  readonly workflowManifest: ArchitextWorkflowManifest;
+  readonly diagnostics: readonly ConstraintDiagnostic[];
 }
 
 export interface ScaffoldVerification {
@@ -25,16 +35,28 @@ export interface ScaffoldVerification {
   readonly devCommands: readonly string[];
 }
 
-export function buildScaffoldContract(spec: ArchitextSpec): ScaffoldContract {
+export interface BuildScaffoldContractOptions {
+  readonly workflowRuntime?: WorkflowRuntime | "auto";
+}
+
+export function buildScaffoldContract(
+  spec: ArchitextSpec,
+  options: BuildScaffoldContractOptions = {}
+): ScaffoldContract {
+  const workflowManifest = compileWorkflowManifest(spec, {
+    runtime: options.workflowRuntime ?? "auto",
+  });
   const tree = computeFileTree(spec, loadCatalog());
   return {
-    expectedPaths: [...tree.paths].sort(),
+    expectedPaths: [...workflowManifest.expectedFiles].sort(),
     byService: Object.fromEntries(
       Object.entries(tree.byService).map(([serviceId, paths]) => [
         serviceId,
         [...paths].sort(),
       ])
     ),
+    workflowManifest,
+    diagnostics: validateWorkflowManifest(workflowManifest),
   };
 }
 
@@ -76,6 +98,18 @@ export function formatScaffoldContract(
     const paths = contract.byService[id] ?? [];
     lines.push("", `### Service: ${id}`, ...paths.map((path) => `- ${path}`));
   }
+
+  lines.push(
+    "",
+    "## Workflow Constraint Manifest",
+    "",
+    "Write this exact manifest to `architext-workflow.json` at the project root.",
+    "Use it as the semantic contract for agents, models, human gates, decisions, tools, and runtime wiring.",
+    "",
+    "```json",
+    formatWorkflowManifest(contract.workflowManifest),
+    "```"
+  );
 
   return lines.join("\n");
 }
@@ -126,6 +160,18 @@ export function formatScaffoldVerification(v: ScaffoldVerification): string {
     lines.push("Next local commands found in README: none");
   }
 
+  return lines.join("\n");
+}
+
+export function formatConstraintDiagnostics(diagnostics: readonly ConstraintDiagnostic[]): string {
+  if (diagnostics.length === 0) return "Workflow constraints: PASS - no completeness gaps found.";
+  const lines = [`Workflow constraints: ${diagnostics.length} completeness gap${diagnostics.length === 1 ? "" : "s"} found.`];
+  for (const diagnostic of diagnostics.slice(0, 20)) {
+    lines.push(`  - [${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}`);
+  }
+  if (diagnostics.length > 20) {
+    lines.push(`  - ...and ${diagnostics.length - 20} more`);
+  }
   return lines.join("\n");
 }
 

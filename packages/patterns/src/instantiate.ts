@@ -164,6 +164,17 @@ export function instantiatePattern(
           ...(e.qualifier !== undefined ? { qualifier: e.qualifier } : {}),
           ...(e.endpointVisibility !== undefined ? { endpointVisibility: e.endpointVisibility } : {}),
           ...(e.authorizer !== undefined ? { authorizer: e.authorizer } : {}) };
+      case "human-review":
+        return { id, from, to, protocol: "human-review",
+          ...(e.reviewType !== undefined ? { reviewType: e.reviewType } : {}),
+          ...(e.assignee !== undefined ? { assignee: e.assignee } : {}),
+          ...(e.sla !== undefined ? { sla: e.sla } : {}),
+          ...(e.instructions !== undefined ? { instructions: e.instructions } : {}) };
+      case "decision":
+        return { id, from, to, protocol: "decision",
+          ...(e.condition !== undefined ? { condition: e.condition } : {}),
+          ...(e.branchLabel !== undefined ? { branchLabel: e.branchLabel } : {}),
+          ...(e.fallback !== undefined ? { fallback: e.fallback } : {}) };
       case "dns":
         return { id, from, to, protocol: "dns",
           ...(e.domainName !== undefined ? { domainName: e.domainName } : {}),

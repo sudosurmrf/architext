@@ -19,6 +19,7 @@ describe("computeFileTree", () => {
     expect(tree.paths).toContain(".gitignore");
     expect(tree.paths).toContain("README.md");
     expect(tree.paths).toContain("architext-spec.json");
+    expect(tree.paths).toContain("architext-workflow.json");
   });
 
   it("prefixes each service's files with its service name", () => {
@@ -230,6 +231,46 @@ describe("computeFileTree", () => {
         "infra/api-gateway.tf",
         "infra/iam.tf",
         "infra/logs.tf",
+      ]),
+    );
+  });
+
+  it("emits LangGraph workflow files when AI workflow nodes are present", () => {
+    const spec: ArchitextSpec = {
+      ...baseSpec,
+      services: [
+        {
+          id: "agent",
+          name: "agent",
+          kind: "ai-agent",
+          position: { x: 0, y: 0 },
+          components: [],
+        },
+        {
+          id: "approval",
+          name: "approval",
+          kind: "human-step",
+          position: { x: 0, y: 0 },
+          components: [],
+        },
+      ],
+      edges: [
+        {
+          id: "review",
+          from: "agent",
+          to: "approval",
+          protocol: "human-review",
+          reviewType: "approval",
+        },
+      ],
+    };
+    const tree = computeFileTree(spec, catalog);
+    expect(tree.paths).toEqual(
+      expect.arrayContaining([
+        "architext-workflow.json",
+        "workflow/index.ts",
+        "workflow/state.ts",
+        "workflow/human-gates.ts",
       ]),
     );
   });

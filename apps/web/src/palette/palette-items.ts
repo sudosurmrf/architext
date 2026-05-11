@@ -38,6 +38,8 @@ const CATEGORIES: PaletteCategoryDef[] = [
   { id: "datastores", label: "Datastores", icon: "HardDrive" },
   { id: "infrastructure", label: "Infrastructure", icon: "CloudCog" },
   { id: "aws", label: "AWS", icon: "Cloud" },
+  { id: "ai", label: "AI", icon: "Bot" },
+  { id: "workflow", label: "Workflow", icon: "GitBranch" },
   { id: "auth", label: "Auth", icon: "Shield" },
   { id: "entry-points", label: "Entry Points", icon: "Play" },
 ];
@@ -55,6 +57,7 @@ const GROUP_KINDS: { kind: GroupKind; name: string; description: string }[] = [
   { kind: "workers", name: "Workers Group", description: "Container for background workers" },
   { kind: "external", name: "External Group", description: "Container for external APIs" },
   { kind: "infrastructure", name: "Infrastructure Group", description: "Container for IaC and deployment resources" },
+  { kind: "ai-workflow", name: "AI Workflow Group", description: "Container for agents, models, approvals, and decision paths" },
   { kind: "sidecars", name: "Sidecars Group", description: "Container for sidecar services" },
   { kind: "custom", name: "Custom Group", description: "Custom logical group" },
 ];
@@ -68,6 +71,10 @@ const SERVICE_KINDS: { kind: ServiceKind; name: string; description: string }[] 
   { kind: "cache", name: "Cache", description: "In-memory key-value cache" },
   { kind: "queue", name: "Queue", description: "Message queue / broker" },
   { kind: "infrastructure", name: "Infrastructure Stack", description: "Terraform, cloud, and container infrastructure" },
+  { kind: "ai-model", name: "AI Model", description: "Hosted or open-source model endpoint" },
+  { kind: "ai-agent", name: "AI Agent", description: "Tool-using agent or autonomous workflow step" },
+  { kind: "human-step", name: "Human Approval", description: "Manual review, approval, edit, or escalation gate" },
+  { kind: "decision", name: "Decision Router", description: "Branching logic based on rules, model output, or input data" },
   { kind: "sidecar", name: "Sidecar", description: "Co-deployed utility process" },
   { kind: "external-api", name: "External API", description: "Third-party API integration" },
 ];
@@ -121,6 +128,8 @@ const CATEGORY_TO_COMPONENT_CATEGORY: Partial<
   "build-tools": "build-tool",
   datastores: "datastore",
   infrastructure: "infrastructure",
+  ai: "ai",
+  workflow: "workflow",
   auth: "auth",
   "entry-points": "entry-point",
 };

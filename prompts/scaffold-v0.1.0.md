@@ -25,6 +25,15 @@ local dev command (e.g., `npm run dev`, `uvicorn main:app --reload`).
   the user will install and run checks after generation.
 - Treat the Expected File Contract as the work order. It was compiled
   deterministically from the spec to reduce architecture discovery time.
+- Treat `architext-workflow.json` as the workflow/constraint contract. Write
+  it exactly from the Workflow Constraint Manifest section, then implement
+  stubs that respect its agents, models, human gates, decisions, tools, and
+  runtime hints.
+- Treat every `businessContext` object as required implementation guidance.
+  Purpose, rules, inputs, outputs, edge cases, acceptance criteria, and notes
+  should shape code, schemas, routing, tests/TODOs, and README guidance. If a
+  business rule cannot be fully implemented from the available architecture,
+  document the explicit TODO and preserve the user's intent.
 - Do not inspect the surrounding repository unless the user's additional
   instructions explicitly ask you to. You are running in a fresh target
   directory and should write the scaffold directly.
@@ -42,6 +51,9 @@ local dev command (e.g., `npm run dev`, `uvicorn main:app --reload`).
   `pip install`, `go get`).
 - **Edges** are typed connections — generate the corresponding client code on
   the `from` side and the corresponding server / handler on the `to` side.
+- **Business context** is deeper intent, not a label. Preserve it in generated
+  docs and use it to name functions, choose payload fields, add validation
+  notes, define decision conditions, and shape human-review criteria.
 - **The spec's project.slug is the recommended top-level project name.** Use
   it for the package name, repository name, and README title.
 
@@ -106,6 +118,36 @@ Amplify, SES, and Bedrock only when their catalog components are present.
 Prefer least-privilege IAM, private subnets for compute/data, outputs for
 cross-service values, and variables for names, regions, domains, image tags,
 and environment-specific values.
+
+### `ai-model`
+Emit a model contract rather than a full app runtime. Include provider/model
+name, supported modalities, input/output JSON shapes, latency/cost notes, and
+environment variables needed by callers. For open-source/self-hosted models,
+document the expected local or hosted inference endpoint.
+
+### `ai-agent`
+Emit an agent scaffold with a clear input contract, tool registry, policy
+guardrails, model adapter, and structured-output parser. Agents should expose
+one function/handler that takes typed input, calls model/tool steps, and returns
+JSON for downstream workflow nodes. Include retry and confidence metadata when
+useful for decision routing or human review.
+
+### `human-step`
+Emit a workflow gate contract, not a fake automated service. Include the review
+schema, reviewer instructions, approval/edit/evaluation/escalation outcomes,
+audit fields, and the exact payload shape forwarded after approval.
+
+### `decision`
+Emit a decision-router contract and lightweight router implementation. Each
+outbound `decision` edge is a branch with a condition/label. Include fallback
+handling and make conditions easy to edit without changing application code.
+
+### LangGraph TypeScript runtime
+When the workflow manifest runtime is `langgraph-ts`, emit the predicted
+`workflow/` files. Keep this as a lightweight adapter scaffold: typed state,
+agent node stubs, model adapter stubs, tool registry, human checkpoint stubs,
+and decision routing. Do not install packages; document the install/dev
+commands in README.
 
 ### `sidecar`
 Emit a minimal observability scaffold (e.g., `otel-collector.yaml`) — usually
@@ -200,6 +242,22 @@ For every edge `from → to` with the given protocol, emit BOTH ends:
   `aws_lambda_permission` or equivalent IAM grant for the invoker. Use
   `invocationType=request-response` for synchronous API routes and
   `invocationType=event` for asynchronous fire-and-forget triggers.
+
+### `human-review`
+- Treat this as a blocking manual step between workflow nodes. The payload must
+  pause until the reviewer approves, edits, evaluates, or escalates it.
+- On the `from` side: emit code/config that creates a review request with
+  `reviewType`, `assignee`, `sla`, `instructions`, and payload metadata.
+- On the `to` side: consume the approved/edited payload and include audit
+  metadata from the human-step. Do not skip this gate.
+
+### `decision`
+- Treat this as a conditional branch edge from a decision-router node. Use
+  `condition` and `branchLabel` as the route predicate/name.
+- Emit router config that evaluates branches deterministically in order and
+  sends unmatched payloads to the edge marked `fallback=true` when present.
+- Branch conditions may reference input fields, model confidence, policy
+  labels, human-review outcomes, or tool results.
 
 ### `dns`
 - On the `from` side: treat the domain as the public route/caller.

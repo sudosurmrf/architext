@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@architext/catalog": "workspace:*",
+    "@architext/constraints": "workspace:*",
     "@architext/files-engine": "workspace:*",
     "@architext/schema": "workspace:*",
     "commander": "^12.0.0",

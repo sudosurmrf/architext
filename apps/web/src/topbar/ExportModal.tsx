@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { ArchitextSpecSchema } from "@architext/schema";
 import { useSpecStore } from "../store/spec-store";
 import { prepareForExport } from "../lib/export-spec";
+import { buildWorkflowContractPreview } from "../lib/workflow-contract";
 
 export interface ExportModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
   const exportedSpec = useMemo(() => prepareForExport(spec), [spec]);
   const jsonString = useMemo(() => JSON.stringify(exportedSpec, null, 2), [exportedSpec]);
+  const workflowPreview = useMemo(() => buildWorkflowContractPreview(spec), [spec]);
 
   const jsonPreview = useMemo(() => {
     const lines = jsonString.split("\n");
@@ -60,6 +62,18 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     URL.revokeObjectURL(url);
   }, [jsonString]);
 
+  const handleWorkflowDownload = useCallback(() => {
+    const blob = new Blob([workflowPreview.json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "architext-workflow.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [workflowPreview.json]);
+
   if (!open) return null;
 
   return (
@@ -85,13 +99,30 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           {jsonPreview}
         </pre>
 
-        <button
-          disabled={validationErrors.length > 0}
-          onClick={handleDownload}
-          className="w-full rounded-lg bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          Download architext-spec.json
-        </button>
+        <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+          <div className="mb-1 font-medium text-gray-800">Workflow Contract</div>
+          <div className="whitespace-pre-line">{workflowPreview.summary}</div>
+          <div className="mt-2 font-medium text-gray-800">
+            Completeness: {workflowPreview.completenessScore}%
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            disabled={validationErrors.length > 0}
+            onClick={handleDownload}
+            className="rounded-lg bg-blue-600 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Download spec
+          </button>
+          <button
+            disabled={validationErrors.length > 0}
+            onClick={handleWorkflowDownload}
+            className="rounded-lg border border-gray-300 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+          >
+            Download workflow
+          </button>
+        </div>
       </div>
     </div>
   );

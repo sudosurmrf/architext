@@ -49,8 +49,34 @@ export function computeFileTree(spec: ArchitextSpec, catalog: Catalog): FileTree
     byService[service.id] = [...servicePaths].sort();
   }
 
+  if (hasAiWorkflow(spec)) {
+    for (const path of langGraphFiles()) {
+      allPaths.add(path);
+    }
+  }
+
   return {
     paths: [...allPaths].sort(),
     byService,
   };
+}
+
+function hasAiWorkflow(spec: ArchitextSpec): boolean {
+  return (
+    spec.services.some((service) =>
+      ["ai-agent", "ai-model", "human-step", "decision"].includes(service.kind)
+    ) || spec.edges.some((edge) => edge.protocol === "human-review" || edge.protocol === "decision")
+  );
+}
+
+function langGraphFiles(): readonly string[] {
+  return [
+    "workflow/index.ts",
+    "workflow/state.ts",
+    "workflow/agents.ts",
+    "workflow/models.ts",
+    "workflow/tools.ts",
+    "workflow/human-gates.ts",
+    "workflow/decisions.ts",
+  ];
 }

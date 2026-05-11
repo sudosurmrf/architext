@@ -6,7 +6,7 @@
  * Consumed by: [[CodeTab]]
  */
 
-import type { ArchitextSpec, Service, Edge } from "@architext/schema";
+import type { ArchitextSpec, BusinessContext, Service, Edge } from "@architext/schema";
 
 const cache = new Map<string, string>();
 
@@ -21,7 +21,12 @@ export function setCache(key: string, code: string): void {
 export function cacheKey(service: Service, edges: Edge[]): string {
   return JSON.stringify({
     id: service.id,
+    name: service.name,
+    kind: service.kind,
+    description: service.description,
+    businessContext: service.businessContext,
     components: service.components,
+    contracts: service.contracts,
     edges,
   });
 }
@@ -43,18 +48,19 @@ export function buildServiceAgentBrief(
       const parts = [`  - ${c.id} (${c.category})`];
       if (c.version) parts.push(` v${c.version}`);
       if (c.config) parts.push(` config=${JSON.stringify(c.config)}`);
-      return parts.join("");
+      const context = c.businessContext ? `\n${formatBusinessContext(c.businessContext, "    ")}` : "";
+      return `${parts.join("")}${context}`;
     })
     .join("\n");
 
   const inboundLines =
     inbound.length > 0
-      ? inbound.map((e) => `  - from ${e.from} via ${formatEdgeProtocol(e)}`).join("\n")
+      ? inbound.map((e) => formatEdgeBriefLine(e, `from ${e.from}`)).join("\n")
       : "  (none)";
 
   const outboundLines =
     outbound.length > 0
-      ? outbound.map((e) => `  - to ${e.to} via ${formatEdgeProtocol(e)}`).join("\n")
+      ? outbound.map((e) => formatEdgeBriefLine(e, `to ${e.to}`)).join("\n")
       : "  (none)";
 
   const contractLines =
@@ -64,9 +70,14 @@ export function buildServiceAgentBrief(
 
   return `Agent brief for "${spec.project.name}" (slug: ${spec.project.slug})
 
+Project business context:
+${formatBusinessContext(spec.project.businessContext, "  ")}
+
 Service: ${service.name}
 Kind: ${service.kind}
 Description: ${service.description ?? "(none)"}
+Business context:
+${formatBusinessContext(service.businessContext, "  ")}
 
 Components:
 ${componentLines || "  (none)"}
@@ -87,7 +98,36 @@ function formatServiceContract(contract: NonNullable<Service["contracts"]>[numbe
   if (contract.contentType) lines.push(`    contentType: ${contract.contentType}`);
   if (contract.schema) lines.push(`    schema: ${contract.schema}`);
   if (contract.notes) lines.push(`    notes: ${contract.notes}`);
+  if (contract.businessContext) lines.push(formatBusinessContext(contract.businessContext, "    "));
   return lines.join("\n");
+}
+
+function formatEdgeBriefLine(edge: Edge, target: string): string {
+  const context = edge.businessContext ? `\n${formatBusinessContext(edge.businessContext, "    ")}` : "";
+  return `  - ${target} via ${formatEdgeProtocol(edge)}${context}`;
+}
+
+function formatBusinessContext(context: BusinessContext | undefined, indent: string): string {
+  if (!context) return `${indent}(none)`;
+
+  const lines: string[] = [];
+  if (context.purpose) lines.push(`${indent}purpose: ${context.purpose}`);
+  appendList(lines, "businessRules", context.businessRules, indent);
+  appendList(lines, "inputs", context.inputs, indent);
+  appendList(lines, "outputs", context.outputs, indent);
+  appendList(lines, "edgeCases", context.edgeCases, indent);
+  appendList(lines, "acceptanceCriteria", context.acceptanceCriteria, indent);
+  if (context.notes) lines.push(`${indent}notes: ${context.notes}`);
+
+  return lines.length > 0 ? lines.join("\n") : `${indent}(none)`;
+}
+
+function appendList(lines: string[], label: string, values: readonly string[] | undefined, indent: string): void {
+  if (!values || values.length === 0) return;
+  lines.push(`${indent}${label}:`);
+  for (const value of values) {
+    lines.push(`${indent}  - ${value}`);
+  }
 }
 
 function formatEdgeProtocol(edge: Edge): string {
@@ -148,6 +188,17 @@ function formatEdgeProtocol(edge: Edge): string {
       if (edge.qualifier) details.push(`qualifier=${edge.qualifier}`);
       if (edge.endpointVisibility) details.push(`endpoint=${edge.endpointVisibility}`);
       if (edge.authorizer) details.push(`authorizer=${edge.authorizer}`);
+      break;
+    case "human-review":
+      if (edge.reviewType) details.push(`review=${edge.reviewType}`);
+      if (edge.assignee) details.push(`assignee=${edge.assignee}`);
+      if (edge.sla) details.push(`sla=${edge.sla}`);
+      if (edge.instructions) details.push(`instructions=${edge.instructions}`);
+      break;
+    case "decision":
+      if (edge.condition) details.push(`condition=${edge.condition}`);
+      if (edge.branchLabel) details.push(`branch=${edge.branchLabel}`);
+      if (edge.fallback !== undefined) details.push(`fallback=${edge.fallback}`);
       break;
     case "dns":
       if (edge.domainName) details.push(`domain=${edge.domainName}`);

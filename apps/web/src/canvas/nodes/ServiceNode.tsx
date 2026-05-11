@@ -18,6 +18,10 @@ import {
   Box,
   Globe,
   CloudCog,
+  Bot,
+  BrainCircuit,
+  UserCheck,
+  GitBranch,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ServiceNodeData } from "../../lib/to-react-flow";
@@ -33,6 +37,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "build-tool": "bg-amber-100 text-amber-700",
   datastore: "bg-emerald-100 text-emerald-700",
   infrastructure: "bg-sky-100 text-sky-700",
+  ai: "bg-fuchsia-100 text-fuchsia-700",
+  workflow: "bg-indigo-100 text-indigo-700",
   auth: "bg-rose-100 text-rose-700",
   runtime: "bg-teal-100 text-teal-700",
   "entry-point": "bg-gray-100 text-gray-700",
@@ -47,6 +53,10 @@ const KIND_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   cache: Zap,
   queue: MessageSquare,
   infrastructure: CloudCog,
+  "ai-model": BrainCircuit,
+  "ai-agent": Bot,
+  "human-step": UserCheck,
+  decision: GitBranch,
   sidecar: Box,
   "external-api": Globe,
 };

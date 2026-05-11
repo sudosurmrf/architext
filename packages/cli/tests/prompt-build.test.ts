@@ -52,7 +52,9 @@ describe("buildPrompt", () => {
     const out = buildPrompt("META", spec, undefined, buildScaffoldContract(spec));
 
     expect(out).toContain("Expected File Contract");
+    expect(out).toContain("Workflow Constraint Manifest");
     expect(out).toContain("Expected file count:");
+    expect(out).toContain("architext-workflow.json");
     expect(out).toContain("- api/main.py");
     expect(out).toContain("- api/requirements.txt");
   });

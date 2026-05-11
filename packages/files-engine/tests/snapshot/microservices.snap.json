@@ -7,7 +7,8 @@
     "Services/ingest/src/index.js",
     "Services/processor/.python-version",
     "Services/processor/pyproject.toml",
-    "architext-spec.json"
+    "architext-spec.json",
+    "architext-workflow.json"
   ],
   "byService": {
     "ingest": [

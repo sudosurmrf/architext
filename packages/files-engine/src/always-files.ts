@@ -6,7 +6,7 @@
  * Consumed by: [[compute]]
  */
 
-const ALWAYS = [".gitignore", "README.md", "architext-spec.json"] as const;
+const ALWAYS = [".gitignore", "README.md", "architext-spec.json", "architext-workflow.json"] as const;
 
 export function alwaysFiles(): readonly string[] {
   return ALWAYS;

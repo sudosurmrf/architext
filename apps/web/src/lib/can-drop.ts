@@ -28,6 +28,10 @@ const COMPATIBLE_CATEGORIES: Record<ServiceKind, readonly ComponentCategory[]> =
   cache: ["datastore"],
   queue: ["datastore"],
   infrastructure: ["infrastructure"],
+  "ai-model": ["ai", "workflow", "infrastructure"],
+  "ai-agent": ["ai", "workflow", "language", "runtime", "framework", "library", "auth", "entry-point"],
+  "human-step": ["workflow", "auth", "entry-point"],
+  decision: ["workflow", "ai", "library", "entry-point"],
   sidecar: ["language", "runtime", "framework", "library", "entry-point"],
   "external-api": ["entry-point"],
 };

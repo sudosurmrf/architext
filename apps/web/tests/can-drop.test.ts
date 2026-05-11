@@ -160,6 +160,20 @@ describe("canDrop — component-chip", () => {
     const result = canDrop(terraform, inService, spec);
     expect(result.allowed).toBe(true);
   });
+
+  it("allows AI and workflow components inside AI workflow services", () => {
+    const aiComponent: DragItem = { type: "component-chip", catalogId: "openai-gpt-4o", category: "ai", name: "OpenAI GPT-4o" };
+    const workflowComponent: DragItem = { type: "component-chip", catalogId: "decision-router", category: "workflow", name: "Decision Router" };
+    const spec = makeSpec({
+      services: [
+        { id: "s1", name: "agent", kind: "ai-agent", position: { x: 0, y: 0 }, components: [] },
+        { id: "s2", name: "router", kind: "decision", position: { x: 0, y: 0 }, components: [] },
+      ],
+    });
+
+    expect(canDrop(aiComponent, inService, spec).allowed).toBe(true);
+    expect(canDrop(workflowComponent, { zone: "service", serviceId: "s2" }, spec).allowed).toBe(true);
+  });
 });
 
 describe("canDrop — pattern", () => {

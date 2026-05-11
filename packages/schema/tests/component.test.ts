@@ -11,6 +11,8 @@ describe("ComponentCategorySchema", () => {
       "build-tool",
       "datastore",
       "infrastructure",
+      "ai",
+      "workflow",
       "auth",
       "entry-point",
     ];
@@ -36,9 +38,11 @@ describe("ComponentSchema", () => {
       ...minimal,
       version: "^18.3.0",
       config: { strictMode: true },
+      businessContext: { purpose: "Render task list UI.", acceptanceCriteria: ["shows empty state"] },
     });
     expect(result.version).toBe("^18.3.0");
     expect(result.config).toEqual({ strictMode: true });
+    expect(result.businessContext?.purpose).toBe("Render task list UI.");
   });
 
   it("rejects empty id", () => {

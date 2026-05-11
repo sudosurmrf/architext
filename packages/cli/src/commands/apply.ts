@@ -6,15 +6,17 @@
  * Consumed by: [[cli]]
  */
 
-import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ArchitextSpecSchema } from "@architext/schema";
+import { formatWorkflowManifest, type WorkflowRuntime } from "@architext/constraints";
 import { ExitCode, formatZodError } from "../errors";
 import { loadMetaPrompt } from "../prompt/load";
 import { buildPrompt } from "../prompt/build";
 import type { AgentBackend } from "../agent/backend";
 import {
   buildScaffoldContract,
+  formatConstraintDiagnostics,
   formatScaffoldVerification,
   verifyScaffoldContract,
 } from "../contract";
@@ -26,6 +28,7 @@ export interface ApplyOpts {
   instructions?: string;
   dryRun?: boolean;
   force?: boolean;
+  workflowRuntime?: WorkflowRuntime | "auto";
   write: (s: string) => void;
 }
 
@@ -54,7 +57,9 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
     return ExitCode.SpecInvalid;
   }
   const spec = parsed.data;
-  const contract = buildScaffoldContract(spec);
+  const contract = buildScaffoldContract(spec, {
+    workflowRuntime: opts.workflowRuntime ?? "auto",
+  });
 
   // 2. Load meta-prompt and assemble final prompt.
   let meta: string;
@@ -91,10 +96,17 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
     return ExitCode.TargetExists;
   }
   mkdirSync(target, { recursive: true });
+  writeFileSync(
+    resolve(target, "architext-workflow.json"),
+    formatWorkflowManifest(contract.workflowManifest) + "\n"
+  );
   opts.write("Architext apply");
   opts.write(`  target: ${target}`);
   opts.write(`  agent: ${opts.backend.name}`);
   opts.write(`  expected files: ${contract.expectedPaths.length}`);
+  opts.write("  workflow manifest: architext-workflow.json");
+  opts.write(`  workflow runtime: ${contract.workflowManifest.runtimeHints.runtime}`);
+  opts.write(formatConstraintDiagnostics(contract.diagnostics));
 
   // 6. Spawn backend.
   const run = opts.backend.spawn(fullPrompt, { cwd: target });
@@ -121,6 +133,7 @@ export async function runApply(opts: ApplyOpts): Promise<ExitCode> {
     case "done": {
       const verification = verifyScaffoldContract(target, contract);
       opts.write(formatScaffoldVerification(verification));
+      opts.write(formatConstraintDiagnostics(contract.diagnostics));
       opts.write(
         `created ${target} (${result.filesWritten} files reported by ${opts.backend.name}, ${formatElapsed(Date.now() - startedAt)} elapsed)`
       );

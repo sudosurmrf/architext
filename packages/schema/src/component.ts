@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { IdSchema } from "./primitives";
+import { BusinessContextSchema } from "./business-context";
 
 export const ComponentCategorySchema = z.enum([
   "language",
@@ -17,6 +18,8 @@ export const ComponentCategorySchema = z.enum([
   "build-tool",
   "datastore",
   "infrastructure",
+  "ai",
+  "workflow",
   "auth",
   "entry-point",
 ]);
@@ -27,5 +30,6 @@ export const ComponentSchema = z.object({
   category: ComponentCategorySchema,
   version: z.string().min(1).optional(),
   config: z.record(z.unknown()).optional(),
+  businessContext: BusinessContextSchema.optional(),
 });
 export type Component = z.infer<typeof ComponentSchema>;

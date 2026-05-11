@@ -18,6 +18,8 @@ describe("ProtocolSchema", () => {
       "secret",
       "container-image",
       "lambda-invoke",
+      "human-review",
+      "decision",
       "dns",
     ];
     for (const p of ps) {
@@ -36,7 +38,13 @@ describe("EdgeSchema (discriminated union)", () => {
   it("accepts http with optional fields", () => {
     expect(EdgeSchema.safeParse({ ...baseId, protocol: "http" }).success).toBe(true);
     expect(
-      EdgeSchema.safeParse({ ...baseId, protocol: "http", port: 8080, basePath: "/api" }).success
+      EdgeSchema.safeParse({
+        ...baseId,
+        protocol: "http",
+        port: 8080,
+        basePath: "/api",
+        businessContext: { purpose: "Submit task creation requests." },
+      }).success
     ).toBe(true);
   });
 
@@ -93,6 +101,25 @@ describe("EdgeSchema (discriminated union)", () => {
         invocationType: "request-response",
         endpointVisibility: "private",
         authorizer: "iam",
+      }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({
+        ...baseId,
+        protocol: "human-review",
+        reviewType: "approval",
+        assignee: "ops",
+        sla: "4h",
+        instructions: "Approve if confidence is below threshold.",
+      }).success
+    ).toBe(true);
+    expect(
+      EdgeSchema.safeParse({
+        ...baseId,
+        protocol: "decision",
+        condition: "riskScore > 0.7",
+        branchLabel: "high-risk",
+        fallback: false,
       }).success
     ).toBe(true);
     expect(

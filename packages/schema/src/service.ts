@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { IdSchema, PositionSchema } from "./primitives";
 import { ComponentSchema } from "./component";
+import { BusinessContextSchema } from "./business-context";
 
 export const ServiceKindSchema = z.enum([
   "frontend-app",
@@ -18,6 +19,10 @@ export const ServiceKindSchema = z.enum([
   "cache",
   "queue",
   "infrastructure",
+  "ai-model",
+  "ai-agent",
+  "human-step",
+  "decision",
   "sidecar",
   "external-api",
 ]);
@@ -32,6 +37,7 @@ export const ServiceContractSchema = z
     contentType: z.string().min(1).optional(),
     schema: z.string().min(1).optional(),
     notes: z.string().min(1).optional(),
+    businessContext: BusinessContextSchema.optional(),
   })
   .strict();
 export type ServiceContract = z.infer<typeof ServiceContractSchema>;
@@ -40,6 +46,7 @@ export const ServiceSchema = z.object({
   id: IdSchema,
   name: z.string().min(1),
   description: z.string().optional(),
+  businessContext: BusinessContextSchema.optional(),
   kind: ServiceKindSchema,
   groupId: IdSchema.optional(),
   position: PositionSchema.optional(),

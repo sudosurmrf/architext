@@ -40,6 +40,8 @@ describe("runApply", () => {
     const joined = out.join("\n");
     expect(joined).toContain("# Architext Scaffold Prompt v0.1.0");
     expect(joined).toContain("Expected File Contract");
+    expect(joined).toContain("Workflow Constraint Manifest");
+    expect(joined).toContain("architext-workflow.json");
     expect(joined).toContain("- README.md");
     expect(joined).toContain('"slug": "smoke"');
     expect(existsSync(resolve(dir, "smoke"))).toBe(false);
@@ -107,6 +109,7 @@ describe("runApply", () => {
     expect(out.join("\n")).toContain("Scaffold contract: FAIL");
     expect(out.join("\n")).toContain(".gitignore");
     expect(out.join("\n")).toContain("architext-spec.json");
+    expect(existsSync(resolve(dir, "smoke", "architext-workflow.json"))).toBe(true);
   });
 
   it("succeeds end-to-end when mock backend writes every expected file", async () => {
@@ -122,6 +125,7 @@ describe("runApply", () => {
           { path: ".gitignore", content: "node_modules/\n" },
           { path: "README.md", content: "# Smoke\n\nnpm run dev\n" },
           { path: "architext-spec.json", content: JSON.stringify(validSpec) },
+          { path: "architext-workflow.json", content: "{}" },
           { path: "package.json", content: "{}" },
           { path: "tmpnodejsnpm-cache/_logs/debug.log", content: "cache noise" },
           { path: "node_modules/example/index.js", content: "cache noise" },

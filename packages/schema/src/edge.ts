@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { IdSchema } from "./primitives";
+import { BusinessContextSchema } from "./business-context";
 
 export const ProtocolSchema = z.enum([
   "http",
@@ -24,6 +25,8 @@ export const ProtocolSchema = z.enum([
   "secret",
   "container-image",
   "lambda-invoke",
+  "human-review",
+  "decision",
   "dns",
 ]);
 export type Protocol = z.infer<typeof ProtocolSchema>;
@@ -32,6 +35,7 @@ const Base = z.object({
   id: IdSchema,
   from: IdSchema,
   to: IdSchema,
+  businessContext: BusinessContextSchema.optional(),
 });
 
 export const EdgeSchema = z.discriminatedUnion("protocol", [
@@ -104,6 +108,19 @@ export const EdgeSchema = z.discriminatedUnion("protocol", [
     qualifier: z.string().optional(),
     endpointVisibility: z.enum(["public", "private"]).optional(),
     authorizer: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("human-review"),
+    reviewType: z.enum(["approval", "edit", "evaluation", "escalation"]).optional(),
+    assignee: z.string().optional(),
+    sla: z.string().optional(),
+    instructions: z.string().optional(),
+  }).strict(),
+  Base.extend({
+    protocol: z.literal("decision"),
+    condition: z.string().optional(),
+    branchLabel: z.string().optional(),
+    fallback: z.boolean().optional(),
   }).strict(),
   Base.extend({
     protocol: z.literal("dns"),

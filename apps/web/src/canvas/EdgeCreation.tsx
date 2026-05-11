@@ -35,6 +35,8 @@ const PROTOCOLS: readonly ProtocolOption[] = [
   { value: "secret",    label: "Secret",    description: "Secrets/config access",  color: "border-red-300 hover:bg-red-50" },
   { value: "container-image", label: "Image", description: "Container image flow", color: "border-violet-300 hover:bg-violet-50" },
   { value: "lambda-invoke", label: "Lambda", description: "API Gateway invokes Lambda", color: "border-fuchsia-300 hover:bg-fuchsia-50" },
+  { value: "human-review", label: "Human", description: "Approval / eval gate", color: "border-rose-300 hover:bg-rose-50" },
+  { value: "decision", label: "Decision", description: "Conditional branch", color: "border-indigo-300 hover:bg-indigo-50" },
   { value: "dns",       label: "DNS",       description: "Domain / record target", color: "border-sky-300 hover:bg-sky-50" },
 ] as const;
 
@@ -260,6 +262,27 @@ export function useEdgeCreation(): EdgeCreationState {
             invocationType: "request-response",
             endpointVisibility: "private",
             authorizer: "iam",
+          };
+          break;
+        case "human-review":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            reviewType: "approval",
+            assignee: "human-reviewer",
+            instructions: "Review payload and approve before forwarding.",
+          };
+          break;
+        case "decision":
+          edge = {
+            id: edgeId,
+            from: pendingConnection.source,
+            to: pendingConnection.target,
+            protocol,
+            condition: "confidence >= 0.8",
+            branchLabel: "approved",
           };
           break;
         case "dns":

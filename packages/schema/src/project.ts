@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { BusinessContextSchema } from "./business-context";
 
 const SlugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -16,6 +17,7 @@ export const ProjectMetaSchema = z.object({
     message: "slug must be lowercase kebab-case, e.g. my-app",
   }),
   description: z.string().optional(),
+  businessContext: BusinessContextSchema.optional(),
   defaultBranch: z.string().min(1).optional(),
 });
 

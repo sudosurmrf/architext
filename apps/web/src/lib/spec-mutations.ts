@@ -47,6 +47,7 @@ export function addGroup(spec: ArchitextSpec, params: AddGroupParams): Architext
 export interface AddServiceParams {
   id: string;
   name: string;
+  description?: string;
   kind: ServiceKind;
   position: Position;
   components: Component[];
@@ -57,6 +58,7 @@ export function addService(spec: ArchitextSpec, params: AddServiceParams): Archi
   const service: Service = {
     id: params.id,
     name: params.name,
+    ...(params.description ? { description: params.description } : {}),
     kind: params.kind,
     position: params.position,
     components: [...params.components],

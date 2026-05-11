@@ -8,6 +8,7 @@
     "Backend/db/schema.sql",
     "README.md",
     "architext-spec.json",
+    "architext-workflow.json",
     "web/index.html",
     "web/src/App.tsx",
     "web/src/main.tsx",

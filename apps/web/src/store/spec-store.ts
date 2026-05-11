@@ -13,6 +13,7 @@ import type {
   Component,
   Position,
   Size,
+  BusinessContext,
 } from "@architext/schema";
 import {
   addGroup,
@@ -60,7 +61,7 @@ export interface SpecState {
   // ─── Actions ───────────────────────────────────────────
   setSpec: (spec: ArchitextSpec) => void;
   resetSpec: () => ArchitextSpec;
-  updateProject: (name: string, slug: string, description?: string) => void;
+  updateProject: (name: string, slug: string, description?: string, businessContext?: BusinessContext) => void;
   addGroup: (params: AddGroupParams) => void;
   addService: (params: AddServiceParams) => void;
   addComponent: (serviceId: string, component: Component) => void;
@@ -100,12 +101,11 @@ export const useSpecStore = create<SpecState>((set) => {
       set({ spec, rfGraph: specToReactFlow(spec) });
       return spec;
     },
-    updateProject: (name, slug, description) =>
+    updateProject: (name, slug, description, businessContext) =>
       update((s) => {
-        const project = { ...s.project, name, slug };
-        if (description !== undefined) {
-          project.description = description;
-        }
+        const project = { ...s.project, name, slug, description, businessContext };
+        if (project.description === undefined) delete project.description;
+        if (project.businessContext === undefined) delete project.businessContext;
         return { ...s, project };
       }),
     addGroup: (params) => update((s) => addGroup(s, params)),

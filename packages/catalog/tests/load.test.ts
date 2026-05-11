@@ -52,4 +52,18 @@ describe("loadCatalog", () => {
       ]),
     );
   });
+
+  it("has first-class AI workflow nodes and gates", () => {
+    const cat = loadCatalog();
+    expect(cat.byKindIfService("ai-agent").map((e) => e.id)).toContain("ai-agent-service");
+    expect(cat.byKindIfService("ai-model").map((e) => e.id)).toEqual(
+      expect.arrayContaining(["openai-gpt-4o", "anthropic-claude-sonnet", "meta-llama"]),
+    );
+    expect(cat.byKindIfService("human-step").map((e) => e.id)).toContain("human-approval-step");
+    expect(cat.byKindIfService("decision").map((e) => e.id)).toContain("decision-router");
+    expect(cat.byCategory("ai").length).toBeGreaterThanOrEqual(6);
+    expect(cat.byCategory("workflow").map((e) => e.id)).toEqual(
+      expect.arrayContaining(["human-approval-step", "decision-router"]),
+    );
+  });
 });

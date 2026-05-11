@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { IdSchema, PositionSchema, SizeSchema } from "./primitives";
+import { BusinessContextSchema } from "./business-context";
 
 export const GroupKindSchema = z.enum([
   "frontend",
@@ -16,6 +17,7 @@ export const GroupKindSchema = z.enum([
   "workers",
   "external",
   "infrastructure",
+  "ai-workflow",
   "sidecars",
   "custom",
 ]);
@@ -28,6 +30,7 @@ export const GroupSchema = z.object({
   id: IdSchema,
   name: z.string().min(1),
   description: z.string().optional(),
+  businessContext: BusinessContextSchema.optional(),
   kind: GroupKindSchema,
   serviceIds: z
     .array(IdSchema)
