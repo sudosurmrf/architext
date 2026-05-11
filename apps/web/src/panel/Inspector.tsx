@@ -6,9 +6,10 @@
  * Consumed by: [[SidePanel]] (bottom section when selection active)
  */
 
+import { useState } from "react";
 import { useUIStore } from "../store/ui-store";
 import { useSpecStore } from "../store/spec-store";
-import { Settings, Trash2 } from "lucide-react";
+import { Settings, Trash2, Plus, X, ChevronDown, ChevronRight } from "lucide-react";
 import { loadCatalog, type CatalogEntry } from "@architext/catalog";
 import type {
   ArchitextSpec,
@@ -22,6 +23,7 @@ import type {
   GroupNetwork,
   ServiceContract,
   BusinessContext,
+  Protocol,
 } from "@architext/schema";
 
 const GROUP_KINDS: GroupKind[] = [
@@ -53,6 +55,13 @@ const SERVICE_KINDS: ServiceKind[] = [
 ];
 
 const NETWORK_OPTIONS: (GroupNetwork | "")[] = ["", "public", "private", "internal"];
+
+const PROTOCOLS: Protocol[] = [
+  "http", "graphql", "grpc", "websocket", "queue", "sql",
+  "key-value", "fs", "event", "object-storage", "identity",
+  "secret", "container-image", "lambda-invoke", "human-review",
+  "decision", "dns",
+];
 const COMPONENT_CATEGORIES: ComponentCategory[] = [
   "language",
   "runtime",
@@ -140,76 +149,103 @@ function BusinessContextEditor({
   onChange: (value: BusinessContext | undefined) => void;
   title?: string;
 }) {
+  const filledCount = [
+    value?.purpose, value?.notes,
+    ...(value?.businessRules ?? []),
+    ...(value?.inputs ?? []),
+    ...(value?.outputs ?? []),
+    ...(value?.edgeCases ?? []),
+    ...(value?.acceptanceCriteria ?? []),
+  ].filter(Boolean).length;
+
+  const [open, setOpen] = useState(filledCount > 0);
+
   const update = (patch: Partial<BusinessContext>) => {
     onChange(normalizeBusinessContext({ ...(value ?? {}), ...patch }));
   };
 
   return (
-    <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="text-xs font-semibold text-emerald-800">{title}</div>
-        <div className="text-[11px] text-emerald-700">Optional scaffold guidance</div>
-      </div>
-      <div className="grid gap-2 lg:grid-cols-2">
-        <Field label="Purpose">
-          <textarea
-            className={`${inputClass} min-h-20 resize-none bg-white`}
-            value={value?.purpose ?? ""}
-            placeholder="What this piece exists to accomplish"
-            onChange={(e) => update({ purpose: optionalText(e.target.value) })}
-          />
-        </Field>
-        <Field label="Notes">
-          <textarea
-            className={`${inputClass} min-h-20 resize-none bg-white`}
-            value={value?.notes ?? ""}
-            placeholder="Extra implementation context for Claude"
-            onChange={(e) => update({ notes: optionalText(e.target.value) })}
-          />
-        </Field>
-        <Field label="Business rules">
-          <textarea
-            className={`${inputClass} min-h-24 resize-none bg-white`}
-            value={listText(value?.businessRules)}
-            placeholder="One rule per line"
-            onChange={(e) => update({ businessRules: optionalList(e.target.value) })}
-          />
-        </Field>
-        <Field label="Inputs">
-          <textarea
-            className={`${inputClass} min-h-24 resize-none bg-white`}
-            value={listText(value?.inputs)}
-            placeholder="One expected input per line"
-            onChange={(e) => update({ inputs: optionalList(e.target.value) })}
-          />
-        </Field>
-        <Field label="Outputs">
-          <textarea
-            className={`${inputClass} min-h-24 resize-none bg-white`}
-            value={listText(value?.outputs)}
-            placeholder="One expected output per line"
-            onChange={(e) => update({ outputs: optionalList(e.target.value) })}
-          />
-        </Field>
-        <Field label="Edge cases">
-          <textarea
-            className={`${inputClass} min-h-24 resize-none bg-white`}
-            value={listText(value?.edgeCases)}
-            placeholder="One edge case per line"
-            onChange={(e) => update({ edgeCases: optionalList(e.target.value) })}
-          />
-        </Field>
-        <div className="lg:col-span-2">
-          <Field label="Acceptance criteria">
-            <textarea
-              className={`${inputClass} min-h-24 resize-none bg-white`}
-              value={listText(value?.acceptanceCriteria)}
-              placeholder="One acceptance check per line"
-              onChange={(e) => update({ acceptanceCriteria: optionalList(e.target.value) })}
-            />
-          </Field>
+    <div className="rounded-lg border border-emerald-100 bg-emerald-50/60">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between px-3 py-2 text-left"
+      >
+        <span className="text-xs font-semibold text-emerald-800">{title}</span>
+        <span className="flex items-center gap-2">
+          {!open && filledCount > 0 && (
+            <span className="text-[11px] text-emerald-700">{filledCount} fields</span>
+          )}
+          {open
+            ? <ChevronDown className="h-3.5 w-3.5 text-emerald-700" />
+            : <ChevronRight className="h-3.5 w-3.5 text-emerald-700" />}
+        </span>
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          <div className="mb-2 text-[11px] text-emerald-700">Optional scaffold guidance</div>
+          <div className="grid gap-2 lg:grid-cols-2">
+            <Field label="Purpose">
+              <textarea
+                className={`${inputClass} min-h-20 resize-none bg-white`}
+                value={value?.purpose ?? ""}
+                placeholder="What this piece exists to accomplish"
+                onChange={(e) => update({ purpose: optionalText(e.target.value) })}
+              />
+            </Field>
+            <Field label="Notes">
+              <textarea
+                className={`${inputClass} min-h-20 resize-none bg-white`}
+                value={value?.notes ?? ""}
+                placeholder="Extra implementation context for Claude"
+                onChange={(e) => update({ notes: optionalText(e.target.value) })}
+              />
+            </Field>
+            <Field label="Business rules">
+              <textarea
+                className={`${inputClass} min-h-24 resize-none bg-white`}
+                value={listText(value?.businessRules)}
+                placeholder="One rule per line"
+                onChange={(e) => update({ businessRules: optionalList(e.target.value) })}
+              />
+            </Field>
+            <Field label="Inputs">
+              <textarea
+                className={`${inputClass} min-h-24 resize-none bg-white`}
+                value={listText(value?.inputs)}
+                placeholder="One expected input per line"
+                onChange={(e) => update({ inputs: optionalList(e.target.value) })}
+              />
+            </Field>
+            <Field label="Outputs">
+              <textarea
+                className={`${inputClass} min-h-24 resize-none bg-white`}
+                value={listText(value?.outputs)}
+                placeholder="One expected output per line"
+                onChange={(e) => update({ outputs: optionalList(e.target.value) })}
+              />
+            </Field>
+            <Field label="Edge cases">
+              <textarea
+                className={`${inputClass} min-h-24 resize-none bg-white`}
+                value={listText(value?.edgeCases)}
+                placeholder="One edge case per line"
+                onChange={(e) => update({ edgeCases: optionalList(e.target.value) })}
+              />
+            </Field>
+            <div className="lg:col-span-2">
+              <Field label="Acceptance criteria">
+                <textarea
+                  className={`${inputClass} min-h-24 resize-none bg-white`}
+                  value={listText(value?.acceptanceCriteria)}
+                  placeholder="One acceptance check per line"
+                  onChange={(e) => update({ acceptanceCriteria: optionalList(e.target.value) })}
+                />
+              </Field>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -313,15 +349,17 @@ function EdgeConfigFields({ edge, onChange }: { edge: Edge; onChange: (edge: Edg
           </Field>
         </>
       );
-    case "queue":
+    case "queue": {
+      const topicError = !edge.topicName || edge.topicName.trim() === "" ? "Topic name is required" : null;
       return (
         <>
           <Field label="Topic">
             <input
-              className={inputClass}
+              className={`${inputClass} ${topicError ? "border-red-400 focus:border-red-400 focus:ring-red-400" : ""}`}
               value={edge.topicName}
               onChange={(e) => onChange({ ...edge, topicName: optionalText(e.target.value) ?? "default" })}
             />
+            {topicError && <p className="mt-1 text-xs text-red-500">{topicError}</p>}
           </Field>
           <Field label="Broker">
             <input
@@ -332,6 +370,7 @@ function EdgeConfigFields({ edge, onChange }: { edge: Edge; onChange: (edge: Edg
           </Field>
         </>
       );
+    }
     case "sql":
       return (
         <>
@@ -667,6 +706,80 @@ function parseOptionalJson(value: string): Record<string, unknown> | undefined {
   }
 }
 
+function StandaloneContractEditor({
+  contract,
+  onUpdate,
+  onRemove,
+}: {
+  contract: ServiceContract;
+  onUpdate: (patch: Partial<ServiceContract>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded border border-gray-200 bg-gray-50 p-2">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-700">{contract.name}</span>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-red-400 hover:text-red-600"
+          title="Remove contract"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="space-y-2">
+        <Field label="Name">
+          <input
+            className={inputClass}
+            value={contract.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+          />
+        </Field>
+        <Field label="Direction">
+          <select
+            className={selectClass}
+            value={contract.direction}
+            onChange={(e) => onUpdate({ direction: e.target.value as ServiceContract["direction"] })}
+          >
+            <option value="inbound">inbound</option>
+            <option value="outbound">outbound</option>
+            <option value="internal">internal</option>
+          </select>
+        </Field>
+        <Field label="Content type">
+          <input
+            className={inputClass}
+            value={contract.contentType ?? ""}
+            placeholder="application/json"
+            onChange={(e) => onUpdate({ contentType: optionalText(e.target.value) })}
+          />
+        </Field>
+        <Field label="Payload schema">
+          <textarea
+            className={`${inputClass} min-h-20 resize-none font-mono`}
+            value={contract.schema ?? ""}
+            placeholder='{ "id": "string" }'
+            onChange={(e) => onUpdate({ schema: optionalText(e.target.value) })}
+          />
+        </Field>
+        <Field label="Notes">
+          <textarea
+            className={`${inputClass} min-h-16 resize-none`}
+            value={contract.notes ?? ""}
+            onChange={(e) => onUpdate({ notes: optionalText(e.target.value) })}
+          />
+        </Field>
+        <BusinessContextEditor
+          title="Contract Business Context"
+          value={contract.businessContext}
+          onChange={(businessContext) => onUpdate({ businessContext })}
+        />
+      </div>
+    </div>
+  );
+}
+
 function GroupInspector({ group }: { group: Group }) {
   const spec = useSpecStore((s) => s.spec);
   const setSpec = useSpecStore((s) => s.setSpec);
@@ -692,14 +805,17 @@ function GroupInspector({ group }: { group: Group }) {
     clearSelection();
   };
 
+  const nameError = group.name.trim() === "" ? "Name is required" : null;
+
   return (
     <div className={sectionClass}>
       <Field label="Name">
         <input
-          className={inputClass}
+          className={`${inputClass} ${nameError ? "border-red-400 focus:border-red-400 focus:ring-red-400" : ""}`}
           value={group.name}
           onChange={(e) => updateGroup({ name: e.target.value })}
         />
+        {nameError && <p className="mt-1 text-xs text-red-500">{nameError}</p>}
       </Field>
       <Field label="Description">
         <textarea
@@ -840,10 +956,40 @@ function ServiceInspector({ service }: { service: Service }) {
     updateService({ contracts: nextContracts.length > 0 ? nextContracts : undefined });
   };
 
+  const standaloneContracts = (service.contracts ?? []).filter(
+    (c) => !c.edgeId || !spec.edges.some((e) => e.id === c.edgeId)
+  );
+
+  const addStandaloneContract = () => {
+    const id = crypto.randomUUID();
+    updateService({
+      contracts: [
+        ...(service.contracts ?? []),
+        { id, name: "New Contract", direction: "internal" },
+      ],
+    });
+  };
+
+  const removeContract = (contractId: string) => {
+    updateService({
+      contracts: (service.contracts ?? []).filter((c) => c.id !== contractId),
+    });
+  };
+
+  const updateStandaloneContract = (contractId: string, patch: Partial<ServiceContract>) => {
+    updateService({
+      contracts: (service.contracts ?? []).map((c) =>
+        c.id === contractId ? cleanContract({ ...c, ...patch }) : c
+      ),
+    });
+  };
+
   const handleDelete = () => {
     removeNode(service.id);
     clearSelection();
   };
+
+  const nameError = service.name.trim() === "" ? "Name is required" : null;
 
   return (
     <div className="grid gap-3 xl:grid-cols-[280px_minmax(0,1fr)]">
@@ -851,10 +997,11 @@ function ServiceInspector({ service }: { service: Service }) {
         <div className={sectionClass}>
           <Field label="Name">
             <input
-              className={inputClass}
+              className={`${inputClass} ${nameError ? "border-red-400 focus:border-red-400 focus:ring-red-400" : ""}`}
               value={service.name}
               onChange={(e) => updateService({ name: e.target.value })}
             />
+            {nameError && <p className="mt-1 text-xs text-red-500">{nameError}</p>}
           </Field>
           <Field label="Description">
             <textarea
@@ -952,6 +1099,33 @@ function ServiceInspector({ service }: { service: Service }) {
           ) : (
             <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center text-sm text-gray-500">
               No connections selected for this service yet.
+            </div>
+          )}
+        </div>
+
+        <div className={sectionClass}>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-700">Standalone Contracts</span>
+            <button
+              type="button"
+              onClick={addStandaloneContract}
+              className="flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100"
+            >
+              <Plus className="h-3 w-3" /> Add
+            </button>
+          </div>
+          {standaloneContracts.length === 0 ? (
+            <p className="text-xs text-gray-400">No standalone contracts. Add one to define internal or undirected API contracts.</p>
+          ) : (
+            <div className="space-y-2">
+              {standaloneContracts.map((contract) => (
+                <StandaloneContractEditor
+                  key={contract.id}
+                  contract={contract}
+                  onUpdate={(patch) => updateStandaloneContract(contract.id, patch)}
+                  onRemove={() => removeContract(contract.id)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -1062,6 +1236,25 @@ function EdgeInspector({ edge }: { edge: Edge }) {
   const clearSelection = useUIStore((s) => s.clearSelection);
   const select = useUIStore((s) => s.select);
   const spec = useSpecStore((s) => s.spec);
+  const [protocolError, setProtocolError] = useState<string | null>(null);
+
+  const handleProtocolChange = (newProtocol: Protocol) => {
+    setProtocolError(null);
+    const base = {
+      id: edge.id,
+      from: edge.from,
+      to: edge.to,
+      ...(edge.businessContext !== undefined ? { businessContext: edge.businessContext } : {}),
+    };
+    const nextEdge: Edge = newProtocol === "queue"
+      ? { ...base, protocol: "queue", topicName: "default" }
+      : { ...base, protocol: newProtocol } as Edge;
+    try {
+      updateEdge(edge.id, nextEdge);
+    } catch (err) {
+      setProtocolError(err instanceof Error ? err.message : "Protocol change failed");
+    }
+  };
 
   const fromService = spec.services.find((s) => s.id === edge.from);
   const toService = spec.services.find((s) => s.id === edge.to);
@@ -1144,9 +1337,18 @@ function EdgeInspector({ edge }: { edge: Edge }) {
   return (
     <div className="space-y-2">
       <Field label="Protocol">
-        <div className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
-          {edge.protocol}
-        </div>
+        <select
+          className={selectClass}
+          value={edge.protocol}
+          onChange={(e) => handleProtocolChange(e.target.value as Protocol)}
+        >
+          {PROTOCOLS.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+        {protocolError && (
+          <p className="mt-1 text-xs text-red-500">{protocolError}</p>
+        )}
       </Field>
       <Field label="From">
         <div className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
